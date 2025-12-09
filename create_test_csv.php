@@ -1,0 +1,19 @@
+<?php
+
+$data = [
+    ['WB-TEST-001', 'Test Sender 1', 'Address 1', '111', 'Receiver 1', 'Dest Address 1', '999', 'City A', 1.5, 1, 'Standard', 0, 'Test 1'],
+    ['WB-TEST-002', 'Test Sender 2', 'Address 2', '222', 'Receiver 2', 'Dest Address 2', '888', 'City B', 2.5, 2, 'Express', 100, 'Test 2'],
+    ['WB-TEST-003', 'Test Sender 3', 'Address 3', '333', 'Receiver 3', 'Dest Address 3', '777', 'City C', 3.5, 3, 'Standard', 0, 'Test 3'],
+];
+
+$fp = fopen('test_waybills.csv', 'w');
+
+// Add header row if needed, but WaybillsImport starts at row 2, so let's add a dummy header
+fputcsv($fp, ['Waybill', 'Sender', 'Address', 'Phone', 'Receiver', 'Address', 'Phone', 'Dest', 'Weight', 'Qty', 'Service', 'COD', 'Remarks']);
+
+foreach ($data as $row) {
+    fputcsv($fp, $row);
+}
+
+fclose($fp);
+echo "Created test_waybills.csv\n";
