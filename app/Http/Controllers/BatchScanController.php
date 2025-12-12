@@ -142,8 +142,14 @@ class BatchScanController extends Controller
     {
         $limit = $request->input('limit', 100);
         
+        // Exclude waybills that are currently in an active scanning session
+        $activeScans = BatchScanItem::whereHas('session', function($q) {
+            $q->where('status', 'active');
+        })->pluck('waybill_number');
+
         $query = Waybill::where('status', '!=', 'dispatched')
             ->where('batch_ready', true)
+            ->whereNotIn('waybill_number', $activeScans)
             ->orderBy('created_at', 'desc');
             
         $waybills = $query->paginate($limit);
@@ -211,7 +217,42 @@ class BatchScanController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Successfully dispatched {$dispatchedCount} waybills. {$pendingCount} waybills moved to Pending Section."
+            'message' => "Successfully dispatched {$dispatchedCount} waybills. {$pendingCount} waybills moved to Pending Section.",
+            'session_id' => $session->id // Return session ID for manifest link
+        ]);
+    }
+
+    public function printManifest($sessionId)
+    {
+        $session = BatchSession::findOrFail($sessionId);
+        
+        // Get all valid scans for this session
+        // If the session is completed, we can also look at ScannedWaybill
+        // But BatchScanItem (valid) is the source of truth for what was in the batch
+        $scannedItems = BatchScanItem::where('batch_session_id', $session->id)
+            ->where('scan_type', 'valid')
+            ->get();
+            
+        // Get full waybill details
+        $waybills = Waybill::whereIn('waybill_number', $scannedItems->pluck('waybill_number'))->get();
+        
+        // Map waybills to preserve scan order if possible, or just pass collection
+        // Let's sort by scan time
+        $items = $scannedItems->map(function($item) use ($waybills) {
+            $waybill = $waybills->firstWhere('waybill_number', $item->waybill_number);
+            return (object) [
+                'waybill_number' => $item->waybill_number,
+                'scan_time' => $item->scan_time,
+                'waybill' => $waybill
+            ];
+        });
+
+        return view('reports.manifest', [
+            'session' => $session,
+            'items' => $items,
+            'total_count' => $items->count(),
+            'date' => now()->format('F d, Y'),
+            'time' => now()->format('h:i A')
         ]);
     }
     public function markAsPending(Request $request)
@@ -267,6 +308,19 @@ class BatchScanController extends Controller
             'total' => $issues->total(),
             'page' => $issues->currentPage(),
             'last_page' => $issues->lastPage()
+        ]);
+    }
+    public function getBatchHistory(Request $request)
+    {
+        $limit = $request->input('limit', 20);
+        
+        $sessions = BatchSession::where('status', 'completed')
+            ->orderBy('end_time', 'desc')
+            ->paginate($limit);
+            
+        return response()->json([
+            'success' => true,
+            'sessions' => $sessions->items()
         ]);
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ScannerController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\WaybillController;
+use App\Http\Controllers\BatchScanController;
 use App\Http\Controllers\PendingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SettingsController;
@@ -33,6 +34,8 @@ Route::middleware(['auth'])->group(function () {
     // Scanner - requires scanner permission
     Route::middleware(['role:scanner'])->group(function () {
         Route::get('/scanner', [ScannerController::class, 'index'])->name('scanner');
+        Route::get('/batch-scan/issues', [App\Http\Controllers\BatchScanController::class, 'getPendingIssues'])->name('batch.issues');
+    Route::get('/batch-scan/history', [App\Http\Controllers\BatchScanController::class, 'getBatchHistory'])->name('batch.history');
     });
     
     // Pending Section - requires pending permission

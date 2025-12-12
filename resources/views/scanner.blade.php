@@ -99,6 +99,11 @@
                     <div class="session-status" style="margin-top: 10px;">
                         <span id="sessionStatus" class="status-indicator inactive">No Active Session</span>
                     </div>
+                     <div id="manifestAction" style="display:none; margin-top: 15px;">
+                        <a id="printManifestBtn" href="#" target="_blank" class="btn btn-success" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background-color: #10b981; border: none; padding: 10px 20px; border-radius: 6px; color: white; font-weight: 600;">
+                            <span style="font-size: 1.2rem;">🖨️</span> Print Last Manifest
+                        </a>
+                    </div>
                 </div>
 
                 <div id="scanResult" class="scan-result"></div>
@@ -195,6 +200,7 @@
                 <div class="panel-tabs">
                     <button class="tab-btn active" onclick="switchTab('pending')">Pending</button>
                     <button class="tab-btn" onclick="switchTab('issues')">Issues / On Hold</button>
+                    <button class="tab-btn" onclick="switchTab('history')">History</button>
                 </div>
 
                 <div id="pendingTab" class="tab-content" style="display: block;">
@@ -248,6 +254,22 @@
                     <div id="issuesList" class="pending-list">
                         <p class="loading">Loading issues...</p>
                     </div>
+                
+                 <!-- History Tab -->
+                <div id="historyTab" class="tab-content" style="display: none;">
+                    <div class="panel-header">
+                        <h2>Batch History</h2>
+                        <button id="refreshHistoryBtn" class="btn-icon" title="Refresh">🔄</button>
+                    </div>
+                    
+                    <div class="panel-description">
+                        <small>Recent dispatched batches</small>
+                    </div>
+
+                    <div id="historyList" class="pending-list">
+                        <p class="loading">Loading history...</p>
+                    </div>
+                </div>
                 </div>
             </div>
         </div>
@@ -269,6 +291,9 @@
             
             if (tab === 'issues' && typeof loadIssues === 'function') {
                 loadIssues();
+            }
+             if (tab === 'history' && typeof loadHistory === 'function') {
+                loadHistory();
             }
         }
     </script>

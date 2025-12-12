@@ -12,6 +12,12 @@ class Waybill extends Model
         'weight', 'quantity', 'service_type', 'cod_amount', 'remarks', 'status', 'batch_ready', 'marked_pending_at', 'signing_time'
     ];
 
+    protected $casts = [
+        'signing_time' => 'datetime',
+        'marked_pending_at' => 'datetime',
+        'batch_ready' => 'boolean',
+    ];
+
     public function upload()
     {
         return $this->belongsTo(Upload::class);

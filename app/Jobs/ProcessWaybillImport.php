@@ -60,13 +60,40 @@ class ProcessWaybillImport implements ShouldQueue
             Log::info("DEBUG PATHS: base_path=" . base_path() . " | storage_path=" . storage_path());
             
             // Restore from DB if missing locally (Multi-server support)
-            if (!Storage::disk('local')->exists($this->filePath) && $upload->file_content) {
-                Log::info("File missing locally, restoring from database for Upload {$this->uploadId}");
-                Storage::disk('local')->put($this->filePath, $upload->file_content);
+            // Force restoration if file is missing OR has 0 bytes
+            $needsRestore = !Storage::disk('local')->exists($this->filePath) || Storage::disk('local')->size($this->filePath) === 0;
+            
+            if ($needsRestore) {
+                 $contentSize = $upload->file_content ? strlen($upload->file_content) : 0;
+                 Log::info("Restoring file from database for Upload {$this->uploadId}. DB Base64 Size: {$contentSize} bytes");
+                 
+                 if ($upload->file_content) {
+                    $decoded = base64_decode($upload->file_content);
+                    if ($decoded === false) {
+                        throw new \Exception("Failed to decode base64 content for Upload {$this->uploadId}");
+                    }
+                    Storage::disk('local')->put($this->filePath, $decoded);
+                 } else {
+                    // Critical failure: File missing and no content in DB
+                    throw new \Exception("File missing locally and no content in database (Size: {$contentSize}) for Upload {$this->uploadId}");
+                 }
             }
 
             $fullPath = Storage::disk('local')->path($this->filePath);
-            Log::info("DEBUG FULL PATH: " . $fullPath);
+            
+            // Ensure file is readable
+            if (!file_exists($fullPath)) {
+                throw new \Exception("File not found at path: {$fullPath} even after restoration attempt");
+            }
+            clearstatcache(); // Clear cache to ensure file size is correct
+            $fileSize = filesize($fullPath);
+            Log::info("Importing file: {$fullPath} (Size: {$fileSize} bytes)");
+            
+            if ($fileSize === 0) {
+                 throw new \Exception("File exists but is empty: {$fullPath}");
+            }
+
+            chmod($fullPath, 0664); // Ensure readable by group/user
 
             // Import with custom import class that tracks progress
             Excel::import(

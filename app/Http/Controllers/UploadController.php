@@ -37,9 +37,9 @@ class UploadController extends Controller
     {
         \App\Models\Waybill::where('batch_ready', true)
             ->where('status', '!=', 'dispatched')
-            ->delete();
+            ->update(['batch_ready' => false]);
 
-        return redirect()->route('scanner')->with('success', 'Batch upload cleared successfully.');
+        return redirect()->route('scanner')->with('success', 'Batch cleared. Waybills moved to general pending list.');
     }
 
     /**
@@ -112,8 +112,13 @@ class UploadController extends Controller
             'status' => 'pending',
             'notes' => $batchReady ? 'Batch scanning upload' : 'General upload',
             // Store content in DB for multi-server support (transient)
-            'file_content' => file_get_contents($file->getRealPath())
+            // Use base64 to ensure safe transport across DB drivers
+            'file_content' => base64_encode(file_get_contents($file->getRealPath()))
         ]);
+        
+        // Debug logging
+        $contentSize = strlen($upload->file_content ?? '');
+        \Illuminate\Support\Facades\Log::info("UploadController: Stored file in DB. ID: {$upload->id}, Size: {$contentSize} bytes");
 
         try {
             // Store file to disk for async processing

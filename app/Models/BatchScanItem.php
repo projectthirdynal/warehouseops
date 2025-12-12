@@ -10,6 +10,6 @@ class BatchScanItem extends Model
 
     public function session()
     {
-        return $this->belongsTo(BatchSession::class);
+        return $this->belongsTo(BatchSession::class, 'batch_session_id');
     }
 }

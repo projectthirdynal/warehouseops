@@ -79,8 +79,10 @@
                 <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
                 <option value="dispatched" {{ request('status') === 'dispatched' ? 'selected' : '' }}>Dispatched</option>
                 <option value="in_transit" {{ request('status') === 'in_transit' ? 'selected' : '' }}>In Transit</option>
+                <option value="delivering" {{ request('status') === 'delivering' ? 'selected' : '' }}>Delivering</option>
                 <option value="delivered" {{ request('status') === 'delivered' ? 'selected' : '' }}>Delivered</option>
                 <option value="returned" {{ request('status') === 'returned' ? 'selected' : '' }}>Returned</option>
+                <option value="hq_scheduling" {{ request('status') === 'hq_scheduling' ? 'selected' : '' }}>HQ Scheduling</option>
             </select>
 
             <select name="limit" aria-label="Rows per page">
@@ -118,13 +120,13 @@
                 <thead>
                     <tr>
                         <th scope="col">Waybill #</th>
-                        <th scope="col">Sender</th>
+                        <th scope="col">Product</th>
                         <th scope="col">Receiver</th>
                         <th scope="col">Destination</th>
                         <th scope="col">Weight</th>
                         <th scope="col">Service</th>
                         <th scope="col">Status</th>
-                        <th scope="col">Signing Date</th>
+                        <th scope="col">Date</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -134,8 +136,7 @@
                                 <span class="waybill-badge">{{ $waybill->waybill_number }}</span>
                             </td>
                             <td>
-                                <strong>{{ $waybill->sender_name }}</strong><br>
-                                <small>{{ $waybill->sender_phone }}</small>
+                                <strong>{{ $waybill->sender_name }}</strong>
                             </td>
                             <td>
                                 <strong>{{ $waybill->receiver_name }}</strong><br>
@@ -149,7 +150,7 @@
                                     {{ strtoupper($waybill->status) }}
                                 </span>
                             </td>
-                            <td>{{ $waybill->signing_time ? $waybill->signing_time->format('M d, Y') : '-' }}</td>
+                            <td>{{ $waybill->signing_time ? $waybill->signing_time->format('M d, Y') : $waybill->created_at->format('M d, Y') }}</td>
                         </tr>
                     @empty
                         <tr>

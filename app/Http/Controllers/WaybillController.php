@@ -46,7 +46,9 @@ class WaybillController extends Controller
             'dispatched' => Waybill::where('status', 'dispatched')->count(),
             'in_transit' => Waybill::where('status', 'in_transit')->count(),
             'delivered' => Waybill::where('status', 'delivered')->count(),
+            'delivering' => Waybill::where('status', 'delivering')->count(),
             'returned' => Waybill::where('status', 'returned')->count(),
+            'hq_scheduling' => Waybill::where('status', 'hq_scheduling')->count(),
             'pending' => Waybill::where('status', 'pending')->count(),
         ];
 

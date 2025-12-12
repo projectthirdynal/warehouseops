@@ -15,36 +15,31 @@ class DashboardController extends Controller
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
 
-        // Statistics
-        $deliveredCount = Waybill::where('status', 'delivered')
-            ->whereBetween('signing_time', [Carbon::parse($startDate)->startOfDay(), Carbon::parse($endDate)->endOfDay()])
-            ->count();
-
-        $returnedCount = Waybill::where('status', 'returned')
-            ->whereBetween('signing_time', [Carbon::parse($startDate)->startOfDay(), Carbon::parse($endDate)->endOfDay()])
-            ->count();
-
-        $forReturnCount = Waybill::where('status', 'for return')
-            ->whereBetween('signing_time', [Carbon::parse($startDate)->startOfDay(), Carbon::parse($endDate)->endOfDay()])
-            ->count();
-
-        $totalTerminated = $deliveredCount + $returnedCount + $forReturnCount;
-
-        $deliveryRate = $totalTerminated > 0 ? ($deliveredCount / $totalTerminated) * 100 : 0;
-        $returnRate = $totalTerminated > 0 ? (($returnedCount + $forReturnCount) / $totalTerminated) * 100 : 0;
-
+        // Real-time Status Counts
         $stats = [
             'total_waybills' => Waybill::count(),
-            'pending_waybills' => Waybill::where('status', 'pending')->count(),
-            'dispatched_waybills' => Waybill::where('status', 'dispatched')->count(),
-            'today_scans' => ScannedWaybill::whereDate('scan_date', Carbon::today())->count(),
-            'delivered_period' => $deliveredCount,
-            'returned_period' => $returnedCount + $forReturnCount,
-            'delivery_rate' => $deliveryRate,
-            'return_rate' => $returnRate,
+            'dispatched' => Waybill::where('status', 'dispatched')->count(),
+            'in_transit' => Waybill::where('status', 'in_transit')->count(),
+            'delivered' => Waybill::where('status', 'delivered')->count(),
+            'delivering' => Waybill::where('status', 'delivering')->count(),
+            'returned' => Waybill::where('status', 'returned')->count(),
+            'hq_scheduling' => Waybill::where('status', 'hq_scheduling')->count(),
+            'pending' => Waybill::where('status', 'pending')->count(),
+            
+            // Period-based stats for delivery/return rates
+            'delivered_period' => Waybill::where('status', 'delivered')
+                ->whereBetween('signing_time', [Carbon::parse($startDate)->startOfDay(), Carbon::parse($endDate)->endOfDay()])
+                ->count(),
+            'returned_period' => Waybill::whereIn('status', ['returned', 'for return'])
+                ->whereBetween('signing_time', [Carbon::parse($startDate)->startOfDay(), Carbon::parse($endDate)->endOfDay()])
+                ->count(),
             'start_date' => $startDate,
             'end_date' => $endDate
         ];
+
+        $totalTerminated = $stats['delivered_period'] + $stats['returned_period'];
+        $stats['delivery_rate'] = $totalTerminated > 0 ? ($stats['delivered_period'] / $totalTerminated) * 100 : 0;
+        $stats['return_rate'] = $totalTerminated > 0 ? ($stats['returned_period'] / $totalTerminated) * 100 : 0;
 
         // Recent Scans
         $recentScans = ScannedWaybill::leftJoin('waybills', 'scanned_waybills.waybill_number', '=', 'waybills.waybill_number')
@@ -53,30 +48,6 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        // Waybills List with Filter
-        $query = Waybill::query();
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('waybill_number', 'ilike', "%$search%")
-                  ->orWhere('sender_name', 'ilike', "%$search%")
-                  ->orWhere('receiver_name', 'ilike', "%$search%")
-                  ->orWhere('destination', 'ilike', "%$search%")
-                  ->orWhere('sender_phone', 'ilike', "%$search%")
-                  ->orWhere('receiver_phone', 'ilike', "%$search%");
-            });
-
-        }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        $waybills = $query->orderBy('created_at', 'desc')
-                          ->paginate($request->input('limit', 50))
-                          ->withQueryString();
-
-        return view('dashboard', compact('stats', 'recentScans', 'waybills'));
+        return view('dashboard', compact('stats', 'recentScans'));
     }
 }
