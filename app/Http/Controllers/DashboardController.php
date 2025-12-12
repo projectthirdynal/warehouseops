@@ -62,8 +62,11 @@ class DashboardController extends Controller
                 $q->where('waybill_number', 'ilike', "%$search%")
                   ->orWhere('sender_name', 'ilike', "%$search%")
                   ->orWhere('receiver_name', 'ilike', "%$search%")
-                  ->orWhere('destination', 'ilike', "%$search%");
+                  ->orWhere('destination', 'ilike', "%$search%")
+                  ->orWhere('sender_phone', 'ilike', "%$search%")
+                  ->orWhere('receiver_phone', 'ilike', "%$search%");
             });
+
         }
 
         if ($request->filled('status')) {

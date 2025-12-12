@@ -76,7 +76,7 @@
                             <ul>
                                 <li>File formats: CSV, XLSX, XLS</li>
                                 <li>First row must contain column headers</li>
-                                <li>Maximum file size: <strong>10 MB</strong></li>
+                                <li>Maximum file size: <strong>100 MB</strong></li>
                             </ul>
                         </div>
                     </div>
@@ -180,8 +180,9 @@
 
 @push('scripts')
 <script>
-    // Pass route to JS
+    // Pass routes to JS
     const uploadRoute = "{{ route('upload.store') }}";
+    const statusRouteBase = "{{ url('/upload') }}";
 
     document.addEventListener('DOMContentLoaded', function() {
         const dropZone = document.getElementById('dropZone');
@@ -192,6 +193,8 @@
         const uploadResult = document.getElementById('uploadResult');
         const progressBar = document.getElementById('progressBar');
         const progressFill = document.getElementById('progressFill');
+
+        let pollInterval = null;
 
         // Drag and drop handlers
         dropZone.addEventListener('dragover', (e) => {
@@ -235,9 +238,9 @@
                 fileName.style.color = 'var(--accent-primary)';
                 uploadBtn.disabled = false;
 
-                // Check file size
-                if (file.size > 10 * 1024 * 1024) {
-                    showResult('error', 'File size exceeds 10 MB limit');
+                // Check file size (100MB limit for async processing)
+                if (file.size > 100 * 1024 * 1024) {
+                    showResult('error', 'File size exceeds 100 MB limit');
                     uploadBtn.disabled = true;
                 }
             } else {
@@ -258,34 +261,66 @@
             const formData = new FormData(uploadForm);
             uploadBtn.disabled = true;
             progressBar.style.display = 'block';
-            progressFill.style.width = '0%';
+            progressFill.style.width = '5%';
+            showResult('info', 'Uploading file...');
 
             try {
                 const xhr = new XMLHttpRequest();
 
+                // Track upload progress
                 xhr.upload.addEventListener('progress', (e) => {
                     if (e.lengthComputable) {
-                        const percent = Math.round((e.loaded / e.total) * 100);
+                        // Upload is 0-30% of total progress
+                        const percent = Math.round((e.loaded / e.total) * 30);
                         progressFill.style.width = percent + '%';
                     }
                 });
 
                 xhr.addEventListener('load', () => {
-                    progressBar.style.display = 'none';
-                    uploadBtn.disabled = false;
-
                     if (xhr.status === 200) {
-                        const response = JSON.parse(xhr.responseText);
-                        if (response.success) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            if (response.success && response.async && response.upload_id) {
+                            // Start polling for processing progress
+                            showResult('info', 'Processing file in background...');
+                            progressFill.style.width = '30%';
+                            pollUploadStatus(response.upload_id);
+                        } else if (response.success) {
+                            // Synchronous completion (fallback)
+                            progressBar.style.display = 'none';
                             showResult('success', response.message || 'Upload successful!');
-                            fileInput.value = '';
-                            fileName.textContent = '';
-                            uploadBtn.disabled = true;
+                            resetForm();
                         } else {
+                            progressBar.style.display = 'none';
+                            uploadBtn.disabled = false;
                             showResult('error', response.message || 'Upload failed');
                         }
+                    } catch (e) {
+                        progressBar.style.display = 'none';
+                        uploadBtn.disabled = false;
+                        console.error('JSON Parse Error:', e);
+                        console.log('Server Response:', xhr.responseText);
+                        showResult('error', 'Server returned an invalid response. Check console for details.');
+                    }
                     } else {
-                        showResult('error', 'Upload failed. Please try again.');
+                        // Try to parse error message from JSON response
+                        try {
+                            const errorResponse = JSON.parse(xhr.responseText);
+                            let errorMsg = errorResponse.message || errorResponse.error || 'Upload failed.';
+                            
+                            // Check for validation errors
+                            if (errorResponse.errors) {
+                                const details = Object.values(errorResponse.errors).flat().join('<br>');
+                                errorMsg += `<br><small>${details}</small>`;
+                            }
+                            
+                            showResult('error', `❌ ${errorMsg}`);
+                        } catch (e) {
+                            showResult('error', `❌ Upload failed: ${xhr.statusText}`);
+                        }
+                        
+                        progressBar.style.display = 'none';
+                        uploadBtn.disabled = false;
                     }
                 });
 
@@ -297,6 +332,7 @@
 
                 xhr.open('POST', uploadRoute);
                 xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]').content);
+                xhr.setRequestHeader('Accept', 'application/json');
                 xhr.send(formData);
 
             } catch (error) {
@@ -306,6 +342,50 @@
             }
         });
 
+        function pollUploadStatus(uploadId) {
+            // Clear any existing poll
+            if (pollInterval) clearInterval(pollInterval);
+
+            pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${statusRouteBase}/${uploadId}/status`);
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Update progress bar (processing is 30-100%)
+                        const processingProgress = 30 + (data.progress * 0.7);
+                        progressFill.style.width = processingProgress + '%';
+                        showResult('info', data.message);
+
+                        if (data.status === 'completed') {
+                            clearInterval(pollInterval);
+                            pollInterval = null;
+                            progressFill.style.width = '100%';
+                            showResult('success', data.message);
+                            showResult('success', data.message + '<br>Redirecting to scanner...');
+                            setTimeout(() => {
+                                window.location.href = "{{ route('scanner') }}";
+                            }, 1500);
+                        } else if (data.status === 'failed') {
+                            clearInterval(pollInterval);
+                            pollInterval = null;
+                            progressBar.style.display = 'none';
+                            uploadBtn.disabled = false;
+                            showResult('error', data.message);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Poll error:', error);
+                }
+            }, 2000); // Poll every 2 seconds
+        }
+
+        function resetForm() {
+            fileInput.value = '';
+            fileName.textContent = '';
+            uploadBtn.disabled = true;
+        }
+
         function showResult(type, message) {
             uploadResult.className = 'scan-result ' + type;
             uploadResult.innerHTML = message;
@@ -314,9 +394,10 @@
             if (type === 'success') {
                 setTimeout(() => {
                     uploadResult.style.display = 'none';
-                }, 5000);
+                }, 10000);
             }
         }
     });
 </script>
 @endpush
+

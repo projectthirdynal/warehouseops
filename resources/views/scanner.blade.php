@@ -3,9 +3,7 @@
 @section('title', 'Scanner - Waybill System')
 
 @push('styles')
-@push('styles')
     <!-- Styles merged into style.css -->
-@endpush
 @endpush
 
 @section('content')

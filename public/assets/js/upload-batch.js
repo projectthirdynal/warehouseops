@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const uploadResult = document.getElementById('uploadResult');
     const progressBar = document.getElementById('progressBar');
     const progressFill = document.getElementById('progressFill');
+    let pollInterval = null;
 
     // File input change
     fileInput.addEventListener('change', function () {
@@ -70,43 +71,76 @@ document.addEventListener('DOMContentLoaded', function () {
 
             xhr.addEventListener('load', function () {
                 if (xhr.status === 200) {
-                    const result = JSON.parse(xhr.responseText);
+                    try {
+                        const result = JSON.parse(xhr.responseText);
 
-                    if (result.success) {
-                        let message = `✅ Upload successful!<br>`;
-                        message += `Processed ${result.processed_rows} of ${result.total_rows} rows.<br>`;
-                        message += `<strong>${result.batch_ready} waybills ready for batch scanning!</strong><br>`;
-                        const scannerUrl = (typeof scannerRoute !== 'undefined') ? scannerRoute : 'scanner.php';
-                        message += `<br><a href="${scannerUrl}" class="btn btn-primary" style="margin-top:1rem">→ Go to Scanner</a>`;
+                        if (result.success) {
+                            // Check if we have an upload ID - if so, it's async or we need to poll for completion
+                            if (result.upload_id) {
+                                // Async processing - start polling
+                                showResult('info', '✅ File uploaded. Processing in background...', 0);
+                                if (progressFill) progressFill.style.width = '30%';
+                                pollUploadStatus(result.upload_id);
+                            } else {
+                                // Synchronous completion (Legacy/Fallback)
+                                let message = `✅ Upload successful!<br>`;
 
-                        showResult('success', message, 0);
-                        uploadForm.reset();
-                        fileName.textContent = '';
-                        uploadBtn.disabled = true;
+                                if (result.processed_rows !== undefined && result.total_rows !== undefined) {
+                                    message += `Processed ${result.processed_rows} of ${result.total_rows} rows.<br>`;
+                                    if (result.batch_ready !== undefined) {
+                                        message += `<strong>${result.batch_ready} waybills ready for batch scanning!</strong><br>`;
+                                    }
+                                }
 
-                        // Check if we are in scanner view and have an active session
-                        const sessionActive = document.getElementById('sessionStatus') &&
-                            document.getElementById('sessionStatus').classList.contains('active');
+                                const scannerUrl = (typeof scannerRoute !== 'undefined') ? scannerRoute : 'scanner.php';
+                                message += `<br><a href="${scannerUrl}" class="btn btn-primary" style="margin-top:1rem">→ Go to Scanner</a>`;
 
-                        if (sessionActive) {
-                            // Just refresh the pending list and notify
-                            showResult('success', `✅ Data added! ${result.batch_ready} new waybills ready.`, 5000);
-                            if (typeof loadPendingWaybills === 'function') {
-                                loadPendingWaybills();
+                                showResult('success', message, 0);
+                                uploadForm.reset();
+                                fileName.textContent = '';
+                                uploadBtn.disabled = true;
+
+                                // Check if we are in scanner view and have an active session
+                                const sessionActive = document.getElementById('sessionStatus') &&
+                                    document.getElementById('sessionStatus').classList.contains('active');
+
+                                if (sessionActive) {
+                                    showResult('success', `✅ Data added! ${result.batch_ready || 'New'} waybills ready.`, 5000);
+                                    if (typeof loadPendingWaybills === 'function') {
+                                        loadPendingWaybills();
+                                    }
+                                    if (document.getElementById('uploadSection')) {
+                                        document.getElementById('uploadSection').style.display = 'none';
+                                    }
+                                } else {
+                                    setTimeout(() => {
+                                        window.location.href = scannerUrl;
+                                    }, 1500);
+                                }
                             }
-                            // Hide upload section
-                            document.getElementById('uploadSection').style.display = 'none';
                         } else {
-                            // Reload page after 1 second to update counter and switch view
-                            setTimeout(() => {
-                                window.location.href = window.location.href;
-                            }, 1000);
+                            showResult('error', `❌ ${result.message}`);
                         }
-                    } else {
-                        showResult('error', `❌ ${result.message}`);
+                    } catch (e) {
+                        showResult('error', '❌ Error parsing server response');
+                        console.error('Server response:', xhr.responseText);
                     }
                 } else {
-                    showResult('error', `❌ Upload failed: ${xhr.statusText}`);
+                    // Try to parse error message from JSON response
+                    try {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        let errorMsg = errorResponse.message || errorResponse.error || 'Upload failed.';
+
+                        // Check for validation errors
+                        if (errorResponse.errors) {
+                            const details = Object.values(errorResponse.errors).flat().join('<br>');
+                            errorMsg += `<br><small>${details}</small>`;
+                        }
+
+                        showResult('error', `❌ ${errorMsg}`);
+                    } catch (e) {
+                        showResult('error', `❌ Upload failed: ${xhr.statusText}`);
+                    }
                 }
 
                 progressBar.style.display = 'none';
@@ -121,6 +155,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const url = (typeof uploadBatchRoute !== 'undefined') ? uploadBatchRoute : '/upload-batch';
             xhr.open('POST', url, true);
+            xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]').content);
+            xhr.setRequestHeader('Accept', 'application/json');
             xhr.send(formData);
 
         } catch (error) {
@@ -140,5 +176,50 @@ document.addEventListener('DOMContentLoaded', function () {
                 uploadResult.style.display = 'none';
             }, duration);
         }
+    }
+
+    function pollUploadStatus(uploadId) {
+        // Clear any existing poll
+        if (pollInterval) clearInterval(pollInterval);
+
+        const baseUrl = (typeof uploadStatusBase !== 'undefined') ? uploadStatusBase : '/upload';
+
+        pollInterval = setInterval(async () => {
+            try {
+                const response = await fetch(`${baseUrl}/${uploadId}/status`);
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update progress bar (processing is 30-100%)
+                    if (data.progress && progressFill) {
+                        const processingProgress = 30 + (data.progress * 0.7);
+                        progressFill.style.width = processingProgress + '%';
+                    }
+
+                    showResult('info', data.message, 0);
+
+                    if (data.status === 'completed') {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                        if (progressFill) progressFill.style.width = '100%';
+
+                        showResult('success', data.message + '<br>Redirecting to scanner...');
+
+                        const scannerUrl = (typeof scannerRoute !== 'undefined') ? scannerRoute : 'scanner.php';
+                        setTimeout(() => {
+                            window.location.href = scannerUrl;
+                        }, 1500);
+                    } else if (data.status === 'failed') {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                        if (progressBar) progressBar.style.display = 'none';
+                        uploadBtn.disabled = false;
+                        showResult('error', data.message);
+                    }
+                }
+            } catch (error) {
+                console.error('Poll error:', error);
+            }
+        }, 2000); // Poll every 2 seconds
     }
 });

@@ -70,20 +70,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
             xhr.addEventListener('load', function () {
                 if (xhr.status === 200) {
-                    const result = JSON.parse(xhr.responseText);
+                    try {
+                        const result = JSON.parse(xhr.responseText);
 
-                    if (result.success) {
-                        showResult('success',
-                            `✅ Upload successful! Processed ${result.processed_rows} of ${result.total_rows} rows.`
-                        );
-                        uploadForm.reset();
-                        fileName.textContent = '';
-                        uploadBtn.disabled = true;
-                    } else {
-                        showResult('error', `❌ ${result.message}`);
+                        if (result.success) {
+                            showResult('success',
+                                `✅ ${result.message}`
+                            );
+                            uploadForm.reset();
+                            fileName.textContent = '';
+                            uploadBtn.disabled = true;
+                        } else {
+                            showResult('error', `❌ ${result.message}`);
+                        }
+                    } catch (e) {
+                        showResult('error', '❌ Error parsing server response');
+                        console.error('Server response:', xhr.responseText);
                     }
                 } else {
-                    showResult('error', `❌ Upload failed: ${xhr.statusText}`);
+                    // Try to parse error message from JSON response
+                    try {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        let errorMsg = errorResponse.message || errorResponse.error || 'Upload failed.';
+
+                        // Check for validation errors
+                        if (errorResponse.errors) {
+                            const details = Object.values(errorResponse.errors).flat().join('<br>');
+                            errorMsg += `<br><small>${details}</small>`;
+                        }
+
+                        showResult('error', `❌ ${errorMsg}`);
+                    } catch (e) {
+                        showResult('error', `❌ Upload failed: ${xhr.statusText}`);
+                    }
                 }
 
                 progressBar.style.display = 'none';
@@ -98,6 +117,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const url = (typeof uploadRoute !== 'undefined') ? uploadRoute : '/upload';
             xhr.open('POST', url, true);
+            xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]').content);
+            xhr.setRequestHeader('Accept', 'application/json');
             xhr.send(formData);
 
         } catch (error) {

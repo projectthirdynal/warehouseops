@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Upload;
-use App\Imports\WaybillsImport;
-use Maatwebsite\Excel\Facades\Excel;
+use App\Jobs\ProcessWaybillImport;
+use Illuminate\Support\Facades\Storage;
 
 class UploadController extends Controller
 {
@@ -42,44 +42,104 @@ class UploadController extends Controller
         return redirect()->route('scanner')->with('success', 'Batch upload cleared successfully.');
     }
 
+    /**
+     * Get upload status for progress polling
+     */
+    public function status($id)
+    {
+        $upload = Upload::find($id);
+        
+        if (!$upload) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Upload not found'
+            ], 404);
+        }
+
+        // Calculate progress percentage
+        $progress = 0;
+        if ($upload->status === 'completed') {
+            $progress = 100;
+        } elseif ($upload->status === 'processing' && $upload->total_rows > 0) {
+            $progress = min(99, round(($upload->processed_rows / $upload->total_rows) * 100));
+        } elseif ($upload->status === 'processing') {
+            // Still estimating, count current waybills
+            $currentCount = $upload->waybills()->count();
+            $upload->update(['processed_rows' => $currentCount]);
+            $progress = $currentCount > 0 ? min(99, $currentCount) : 5; // Show some progress
+        }
+
+        return response()->json([
+            'success' => true,
+            'upload_id' => $upload->id,
+            'status' => $upload->status,
+            'filename' => $upload->filename,
+            'total_rows' => $upload->total_rows ?? 0,
+            'processed_rows' => $upload->processed_rows ?? 0,
+            'progress' => $progress,
+            'message' => $this->getStatusMessage($upload)
+        ]);
+    }
+
+    private function getStatusMessage(Upload $upload): string
+    {
+        switch ($upload->status) {
+            case 'pending':
+                return 'Waiting to start...';
+            case 'processing':
+                return 'Processing ' . number_format($upload->processed_rows ?? 0) . ' rows...';
+            case 'completed':
+                return 'Completed! ' . number_format($upload->total_rows ?? 0) . ' waybills imported.';
+            case 'failed':
+                return 'Failed: ' . ($upload->notes ?? 'Unknown error');
+            default:
+                return 'Unknown status';
+        }
+    }
+
     private function handleUpload(Request $request, $batchReady)
     {
         $request->validate([
-            'waybill_file' => 'required|file|mimes:xlsx,xls,csv,txt|max:51200'
+            'waybill_file' => 'required|file|mimes:xlsx,xls,csv,txt|max:102400' // 100MB limit
         ]);
 
         $file = $request->file('waybill_file');
         
+        // Create upload record
         $upload = Upload::create([
             'filename' => $file->getClientOriginalName(),
             'uploaded_by' => 'Admin',
-            'status' => 'processing',
-            'notes' => $batchReady ? 'Batch scanning upload' : 'General upload'
+            'status' => 'pending',
+            'notes' => $batchReady ? 'Batch scanning upload' : 'General upload',
+            // Store content in DB for multi-server support (transient)
+            'file_content' => file_get_contents($file->getRealPath())
         ]);
 
         try {
-            Excel::import(new WaybillsImport($upload->id, $batchReady), $file);
-            
-            // Update stats
-            $totalRows = $upload->waybills()->count();
-            $upload->update([
-                'total_rows' => $totalRows,
-                'processed_rows' => $totalRows,
-                'status' => 'completed'
-            ]);
+            // Store file to disk for async processing
+            $filePath = 'imports/' . $upload->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            Storage::disk('local')->put($filePath, file_get_contents($file->getRealPath()));
+
+            // Dispatch job to queue
+            ProcessWaybillImport::dispatch($upload->id, $filePath, $batchReady);
 
             return response()->json([
                 'success' => true,
-                'message' => 'File uploaded successfully',
-                'total_rows' => $totalRows,
-                'processed_rows' => $totalRows,
-                'batch_ready' => $batchReady ? $totalRows : 0
+                'message' => 'File uploaded and queued for processing',
+                'upload_id' => $upload->id,
+                'status' => 'pending',
+                'async' => true,
+                'total_rows' => 0,     // Prevent "undefined" on frontend
+                'processed_rows' => 0, // Prevent "undefined" on frontend
+                'batch_ready' => 0     // Prevent "undefined" on frontend
             ]);
+
         } catch (\Exception $e) {
             $upload->update(['status' => 'failed', 'notes' => $e->getMessage()]);
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Error processing file: ' . $e->getMessage()
+                'message' => 'Error queuing file: ' . $e->getMessage()
             ], 500);
         }
     }

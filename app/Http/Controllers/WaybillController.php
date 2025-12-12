@@ -17,8 +17,11 @@ class WaybillController extends Controller
                 $q->where('waybill_number', 'ilike', "%$search%")
                   ->orWhere('sender_name', 'ilike', "%$search%")
                   ->orWhere('receiver_name', 'ilike', "%$search%")
-                  ->orWhere('destination', 'ilike', "%$search%");
+                  ->orWhere('destination', 'ilike', "%$search%")
+                  ->orWhere('sender_phone', 'ilike', "%$search%")
+                  ->orWhere('receiver_phone', 'ilike', "%$search%");
             });
+
         }
 
         if ($request->filled('status')) {
@@ -26,14 +29,14 @@ class WaybillController extends Controller
         }
 
         if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
+            $query->whereDate('signing_time', '>=', $request->date_from);
         }
 
         if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
+            $query->whereDate('signing_time', '<=', $request->date_to);
         }
 
-        $waybills = $query->orderBy('created_at', 'desc')
+        $waybills = $query->orderBy('signing_time', 'desc')
                           ->paginate($request->input('limit', 25))
                           ->withQueryString();
 

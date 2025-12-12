@@ -124,7 +124,7 @@
                         <th scope="col">Weight</th>
                         <th scope="col">Service</th>
                         <th scope="col">Status</th>
-                        <th scope="col">Created</th>
+                        <th scope="col">Signing Date</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -149,7 +149,7 @@
                                     {{ strtoupper($waybill->status) }}
                                 </span>
                             </td>
-                            <td>{{ $waybill->created_at->format('M d, Y') }}</td>
+                            <td>{{ $waybill->signing_time ? $waybill->signing_time->format('M d, Y') : '-' }}</td>
                         </tr>
                     @empty
                         <tr>

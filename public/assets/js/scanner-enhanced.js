@@ -53,7 +53,11 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch('/api/batch-scan/start', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
                 body: JSON.stringify({ scanned_by: scannedBy })
             });
 
@@ -99,7 +103,11 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch('/api/batch-scan/scan', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
                 body: JSON.stringify({
                     waybill_number: waybillNumber,
                     session_id: sessionId
@@ -164,7 +172,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const response = await fetch('/api/batch-scan/dispatch', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
                 body: JSON.stringify({
                     session_id: currentSession,
                     scanned_by: scannedByInput.value.trim()
@@ -304,7 +316,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const totalPagesSpan = document.getElementById('totalPages');
 
         try {
-            const response = await fetch(`/api/batch-scan/pending?limit=${rowsPerPage}&page=${currentPage}`);
+            const response = await fetch(`/api/batch-scan/pending?limit=${rowsPerPage}&page=${currentPage}`, {
+                headers: { 'Accept': 'application/json' }
+            });
             const data = await response.json();
 
             if (data.success) {
@@ -434,7 +448,11 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch('/api/batch-scan/mark-pending', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
                 body: JSON.stringify({
                     waybill_number: waybillNumber,
                     session_id: currentSession
@@ -474,7 +492,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const issuesList = document.getElementById('issuesList');
 
         try {
-            const response = await fetch('/api/batch-scan/issues');
+            const response = await fetch('/api/batch-scan/issues', {
+                headers: { 'Accept': 'application/json' }
+            });
             const data = await response.json();
 
             if (data.success) {
@@ -508,7 +528,11 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch('/api/batch-scan/resume-pending', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
                 body: JSON.stringify({ waybill_number: waybillNumber })
             });
 

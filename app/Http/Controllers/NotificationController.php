@@ -12,6 +12,7 @@ class NotificationController extends Controller
      */
     public function index()
     {
+        /** @var \App\Models\User|null $user */
         $user = Auth::user();
 
         if (!$user) {
@@ -34,6 +35,7 @@ class NotificationController extends Controller
      */
     public function markAsRead($id)
     {
+        /** @var \App\Models\User|null $user */
         $user = Auth::user();
         
         if ($user) {

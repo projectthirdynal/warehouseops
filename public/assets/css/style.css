@@ -71,6 +71,7 @@
     --space-8: 32px;
     --space-10: 40px;
     --space-12: 48px;
+    --space-16: 64px;
 
     /* Border Radius */
     --radius-sm: 4px;
@@ -127,20 +128,21 @@ body {
    LAYOUT
    ============================================ */
 .container {
-    max-width: var(--container-xl);
-    margin: 0 auto;
-    padding: var(--space-6) var(--space-8);
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: var(--space-4) var(--space-4);
 }
 
 @media (max-width: 1024px) {
     .container {
-        padding: var(--space-4) var(--space-6);
+        padding: var(--space-3) var(--space-3);
     }
 }
 
 @media (max-width: 640px) {
     .container {
-        padding: var(--space-4);
+        padding: var(--space-2);
     }
 }
 
@@ -304,7 +306,7 @@ body {
     background-color: var(--bg-card);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-xl);
-    padding: var(--space-5);
+    padding: var(--space-6);
     min-height: 100px;
     transition: all var(--transition-base);
     cursor: default;
@@ -396,7 +398,7 @@ body {
     background-color: var(--bg-card);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-xl);
-    padding: var(--space-5);
+    padding: var(--space-6);
 }
 
 .card:hover {
@@ -423,7 +425,7 @@ body {
 }
 
 .card-body {
-    padding: var(--space-5) var(--space-6);
+    padding: var(--space-6);
 }
 
 /* ============================================
