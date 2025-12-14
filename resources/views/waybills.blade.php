@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Accounts - Waybill System')
+@section('title', 'Waybills - Waybill System')
 
 @section('content')
     <!-- Page Header with Icon -->
@@ -125,7 +125,7 @@
                         <th scope="col">Destination</th>
                         <th scope="col">Weight</th>
                         <th scope="col">Service</th>
-                        <th scope="col">Status</th>
+                        <th scope="col">Order Tracking</th>
                         <th scope="col">Date</th>
                     </tr>
                 </thead>
@@ -146,9 +146,39 @@
                             <td>{{ number_format($waybill->weight, 2) }} kg</td>
                             <td>{{ $waybill->service_type }}</td>
                             <td>
-                                <span class="status-badge status-{{ $waybill->status }}">
-                                    {{ strtoupper($waybill->status) }}
-                                </span>
+                                @php
+                                    // Map database status to tracking steps
+                                    $statusMap = [
+                                        'pending' => 0,
+                                        'headquarters scheduling to outlets' => 1,
+                                        'in transit' => 2,
+                                        'delivering' => 3,
+                                        'delivered' => 4,
+                                        'for return' => 4,
+                                        'returned' => 4
+                                    ];
+                                    $currentStep = $statusMap[$waybill->status] ?? 0;
+                                    $steps = [
+                                        ['label' => 'Pending', 'icon' => 'fa-box'],
+                                        ['label' => 'HQ Scheduling', 'icon' => 'fa-calendar'],
+                                        ['label' => 'In Transit', 'icon' => 'fa-truck'],
+                                        ['label' => 'Out for Delivery', 'icon' => 'fa-shipping-fast'],
+                                        ['label' => (in_array($waybill->status, ['returned', 'for return']) ? 'Returned' : 'Delivered'), 'icon' => 'fa-check-circle']
+                                    ];
+                                @endphp
+                                <div class="order-tracking">
+                                    @foreach($steps as $index => $step)
+                                        <div class="tracking-step {{ $index <= $currentStep ? 'completed' : '' }} {{ $index == $currentStep ? 'current' : '' }}">
+                                            <div class="step-icon">
+                                                <i class="fas {{ $step['icon'] }}"></i>
+                                            </div>
+                                            <div class="step-label">{{ $step['label'] }}</div>
+                                        </div>
+                                        @if($index < count($steps) - 1)
+                                            <div class="tracking-line {{ $index < $currentStep ? 'completed' : '' }}"></div>
+                                        @endif
+                                    @endforeach
+                                </div>
                             </td>
                             <td>{{ $waybill->signing_time ? $waybill->signing_time->format('M d, Y') : $waybill->created_at->format('M d, Y') }}</td>
                         </tr>
@@ -170,3 +200,118 @@
         {{ $waybills->links('vendor.pagination.custom') }}
     </div>
 @endsection
+
+@push('styles')
+<style>
+    /* Order Tracking Timeline Styles */
+    .order-tracking {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        padding: 12px 0;
+        min-width: 450px;
+    }
+
+    .tracking-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        position: relative;
+    }
+
+    .step-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--bg-tertiary);
+        border: 2px solid var(--border-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-tertiary);
+        transition: all var(--transition-fast);
+        flex-shrink: 0;
+    }
+
+    .tracking-step.completed .step-icon {
+        background: var(--status-success);
+        border-color: var(--status-success);
+        color: white;
+    }
+
+    .tracking-step.current .step-icon {
+        background: var(--accent-primary);
+        border-color: var(--accent-primary);
+        color: white;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        }
+        50% {
+            box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.1);
+        }
+    }
+
+    .step-label {
+        font-size: 10px;
+        color: var(--text-tertiary);
+        white-space: nowrap;
+        font-weight: var(--font-medium);
+        text-align: center;
+    }
+
+    .tracking-step.completed .step-label,
+    .tracking-step.current .step-label {
+        color: var(--text-primary);
+        font-weight: var(--font-semibold);
+    }
+
+    .tracking-line {
+        flex: 1;
+        height: 2px;
+        background: var(--border-primary);
+        min-width: 24px;
+        margin: 0 4px;
+        margin-bottom: 20px; /* Offset for label */
+    }
+
+    .tracking-line.completed {
+        background: var(--status-success);
+    }
+
+    .step-icon i {
+        font-size: 14px;
+    }
+
+    /* Make table responsive for tracking column */
+    @media (max-width: 1400px) {
+        .order-tracking {
+            min-width: auto;
+            gap: 4px;
+        }
+
+        .step-label {
+            font-size: 8px;
+        }
+
+        .step-icon {
+            width: 28px;
+            height: 28px;
+        }
+
+        .step-icon i {
+            font-size: 12px;
+        }
+
+        .tracking-line {
+            min-width: 16px;
+        }
+    }
+</style>
+@endpush

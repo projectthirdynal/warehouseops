@@ -43,12 +43,12 @@ class WaybillController extends Controller
         // Calculate stats for the 6-card grid
         $stats = [
             'total' => Waybill::count(),
-            'dispatched' => Waybill::where('status', 'dispatched')->count(),
-            'in_transit' => Waybill::where('status', 'in_transit')->count(),
+            'dispatched' => 0, // Status not used in current workflow
+            'in_transit' => Waybill::where('status', 'in transit')->count(),
             'delivered' => Waybill::where('status', 'delivered')->count(),
             'delivering' => Waybill::where('status', 'delivering')->count(),
-            'returned' => Waybill::where('status', 'returned')->count(),
-            'hq_scheduling' => Waybill::where('status', 'hq_scheduling')->count(),
+            'returned' => Waybill::whereIn('status', ['returned', 'for return'])->count(),
+            'hq_scheduling' => Waybill::where('status', 'headquarters scheduling to outlets')->count(),
             'pending' => Waybill::where('status', 'pending')->count(),
         ];
 
