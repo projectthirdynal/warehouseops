@@ -1,3 +1,0 @@
-Starting import...
-Created Upload ID: 92
-Import successful
