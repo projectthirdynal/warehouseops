@@ -10,12 +10,7 @@ let currentPage = 1;
 let rowsPerPage = 100;
 
 // Make functions globally available
-window.loadIssues = loadIssues;
-window.loadHistory = loadHistory;
 
-document.addEventListener('DOMContentLoaded', function () {
-    // ... items ...
-});
 
 let historyLoading = false;
 
@@ -651,6 +646,5 @@ window.resumePending = async function (waybillNumber) {
     }
 };
 
-    // Initial load
-    // loadIssues(); // Only load when tab is clicked
-});
+// Initial load
+// loadIssues(); // Only load when tab is clicked
