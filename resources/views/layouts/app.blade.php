@@ -264,8 +264,8 @@
 
                 @if(auth()->user()->canAccess('accounts'))
                 <a href="{{ route('waybills') }}" class="nav-item {{ request()->routeIs('waybills') ? 'active' : '' }}">
-                    <i class="fas fa-users"></i>
-                    <span>Accounts</span>
+                    <i class="fas fa-list"></i>
+                    <span>Waybills</span>
                 </a>
                 @endif
 
