@@ -95,6 +95,8 @@ class WaybillsImport implements ToCollection, WithHeadingRow, WithChunkReading
 
     public function chunkSize(): int
     {
-        return 5000; // Increased from 1000 for massive performance boost
+        // PostgreSQL has 65535 parameter limit. With 19 columns per row:
+        // 3000 rows × 19 = 57,000 parameters (safely under limit)
+        return 3000; // Optimized for speed while respecting DB limits
     }
 }
