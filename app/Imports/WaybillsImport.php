@@ -4,6 +4,7 @@ namespace App\Imports;
 
 use App\Models\Waybill;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
@@ -54,15 +55,16 @@ class WaybillsImport implements ToCollection, WithHeadingRow, WithChunkReading
         }
 
         if (!empty($recordsToUpsert)) {
-            Waybill::upsert(
+            // Use raw DB query for maximum performance (bypasses Eloquent overhead)
+            DB::table('waybills')->upsert(
                 $recordsToUpsert, 
-                ['waybill_number'], // Unique constraints
-                [ // Columns to update if exists
+                ['waybill_number'], // Unique constraint
+                [ // Columns to update if exists (excluding timestamps for speed)
                     'sender_name', 'sender_address', 'sender_phone',
                     'receiver_name', 'receiver_address', 'receiver_phone',
                     'destination', 'weight', 'quantity', 'service_type',
                     'cod_amount', 'remarks', 'status', 'batch_ready', 
-                    'signing_time', 'updated_at'
+                    'signing_time'
                 ]
             );
         }
@@ -93,6 +95,6 @@ class WaybillsImport implements ToCollection, WithHeadingRow, WithChunkReading
 
     public function chunkSize(): int
     {
-        return 1000;
+        return 5000; // Increased from 1000 for massive performance boost
     }
 }
