@@ -179,12 +179,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function pollUploadStatus(uploadId) {
-        // Clear any existing poll
-        if (pollInterval) clearInterval(pollInterval);
+        // Clear any existing timeout
+        if (pollInterval) clearTimeout(pollInterval);
 
         const baseUrl = (typeof uploadStatusBase !== 'undefined') ? uploadStatusBase : '/upload';
+        let pollDelay = 3000; // Start at 3 seconds
+        const maxPollDelay = 10000; // Max 10 seconds
 
-        pollInterval = setInterval(async () => {
+        const doPoll = async () => {
             try {
                 const response = await fetch(`${baseUrl}/${uploadId}/status`);
                 const data = await response.json();
@@ -199,8 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     showResult('info', data.message, 0);
 
                     if (data.status === 'completed') {
-                        clearInterval(pollInterval);
-                        pollInterval = null;
+                        // Stop polling
                         if (progressFill) progressFill.style.width = '100%';
 
                         showResult('success', data.message + '<br>Redirecting to scanner...');
@@ -209,17 +210,28 @@ document.addEventListener('DOMContentLoaded', function () {
                         setTimeout(() => {
                             window.location.href = scannerUrl;
                         }, 1500);
+                        return; // Exit recursion
                     } else if (data.status === 'failed') {
-                        clearInterval(pollInterval);
-                        pollInterval = null;
                         if (progressBar) progressBar.style.display = 'none';
                         uploadBtn.disabled = false;
                         showResult('error', data.message);
+                        return; // Exit recursion
+                    } else {
+                        // Exponential backoff: increase delay for next poll
+                        pollDelay = Math.min(pollDelay * 1.3, maxPollDelay);
                     }
                 }
             } catch (error) {
                 console.error('Poll error:', error);
+                // On error, slow down polling even more
+                pollDelay = Math.min(pollDelay * 1.5, maxPollDelay);
             }
-        }, 2000); // Poll every 2 seconds
+
+            // Schedule next poll with updated delay
+            pollInterval = setTimeout(doPoll, pollDelay);
+        };
+
+        // Start polling
+        doPoll();
     }
 });
