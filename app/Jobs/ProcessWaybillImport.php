@@ -53,6 +53,12 @@ class ProcessWaybillImport implements ShouldQueue
             return;
         }
 
+        // Prevent duplicate processing if job was already completed but retried (e.g. ack timeout)
+        if ($upload->status === 'completed') {
+            Log::info("ProcessWaybillImport: Upload {$this->uploadId} already marked as completed. Skipping duplicate job.");
+            return;
+        }
+
         try {
             $upload->update(['status' => 'processing']);
 
