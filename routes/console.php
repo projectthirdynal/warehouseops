@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('waybills:auto-cancel-pending')->daily();
+Schedule::command('leads:generate-reorders')->daily();

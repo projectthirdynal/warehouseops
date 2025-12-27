@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\LeadController;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -68,7 +69,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/settings/update', [SettingsController::class, 'update'])->name('settings.update');
     });
     
-    // User Management - requires users permission (superadmin only)
+    // User Management - requires users permission (Admin & Superadmin)
     Route::middleware(['role:users'])->group(function () {
         Route::get('/settings/users', [SettingsController::class, 'users'])->name('settings.users');
         Route::post('/settings/users', [SettingsController::class, 'storeUser'])->name('settings.users.store');
@@ -79,4 +80,24 @@ Route::middleware(['auth'])->group(function () {
     // Notifications - accessible by all
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+
+    // Leads Management
+    Route::middleware(['role:leads_view'])->group(function () {
+        Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
+        Route::post('/leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.updateStatus');
+        
+        // Creation / Import (Agents & Admins)
+        Route::middleware(['role:leads_create'])->group(function () {
+            Route::get('/leads-import', [LeadController::class, 'importForm'])->name('leads.importForm');
+            Route::post('/leads-import', [LeadController::class, 'import'])->name('leads.import');
+            Route::post('/leads-mine', [LeadController::class, 'mine'])->name('leads.mine');
+        });
+
+        // Admin / Team Leader Actions
+        Route::middleware(['role:leads_manage'])->group(function () {
+            Route::post('/leads-assign', [LeadController::class, 'assign'])->name('leads.assign');
+            Route::post('/leads-distribute', [LeadController::class, 'distribute'])->name('leads.distribute');
+            Route::get('/leads-export', [LeadController::class, 'export'])->name('leads.export');
+        });
+    });
 });

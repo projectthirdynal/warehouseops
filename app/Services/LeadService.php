@@ -33,11 +33,16 @@ class LeadService
             return;
         }
 
+        // Enforce locking
+        if ($lead->isLocked() && $actor->role === 'agent') {
+            throw new \Exception("Agents cannot update a locked lead (SALE/DELIVERED).");
+        }
+
         DB::transaction(function () use ($lead, $newStatus, $note, $oldStatus, $actor) {
             $lead->status = $newStatus;
             
             // Update metadata if it's a call-related status
-            if (in_array($newStatus, ['NO_ANSWER', 'REJECT', 'CALLBACK', 'NOT_INTERESTED', 'SALE'])) {
+            if (in_array($newStatus, [Lead::STATUS_NO_ANSWER, Lead::STATUS_REJECT, Lead::STATUS_CALLBACK, Lead::STATUS_SALE])) {
                 $lead->last_called_at = now();
                 $lead->call_attempts++;
             }
@@ -45,7 +50,8 @@ class LeadService
             if ($note) {
                 // Append note to main notes
                 $date = now()->format('Y-m-d H:i');
-                $lead->notes = $lead->notes . "\n[{$date} {$actor->name}]: {$note}";
+                $newNoteEntry = "[{$date} {$actor->name}]: {$note}";
+                $lead->notes = $lead->notes ? $lead->notes . "\n" . $newNoteEntry : $newNoteEntry;
             }
 
             $lead->save();

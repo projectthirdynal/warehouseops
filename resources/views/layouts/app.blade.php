@@ -269,6 +269,13 @@
                 </a>
                 @endif
 
+                @if(auth()->user()->canAccess('leads_view'))
+                <a href="{{ route('leads.index') }}" class="nav-item {{ request()->routeIs('leads*') ? 'active' : '' }}">
+                    <i class="fas fa-headset"></i>
+                    <span>Leads</span>
+                </a>
+                @endif
+
                 <div class="nav-divider"></div>
 
                 @if(auth()->user()->canAccess('settings'))

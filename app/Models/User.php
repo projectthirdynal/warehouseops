@@ -16,12 +16,11 @@ class User extends Authenticatable
     const ROLE_OPERATOR = 'operator';
     const ROLE_AGENT = 'agent';
 
-    // Permission mappings per role
     const PERMISSIONS = [
-        self::ROLE_SUPERADMIN => ['dashboard', 'scanner', 'pending', 'upload', 'accounts', 'settings', 'users'],
-        self::ROLE_ADMIN => ['dashboard', 'scanner', 'pending', 'upload', 'accounts', 'settings'],
+        self::ROLE_SUPERADMIN => ['dashboard', 'scanner', 'pending', 'upload', 'accounts', 'settings', 'users', 'leads_view', 'leads_manage', 'leads_create'],
+        self::ROLE_ADMIN => ['dashboard', 'scanner', 'pending', 'upload', 'accounts', 'settings', 'leads_view', 'leads_manage', 'users', 'leads_create'],
         self::ROLE_OPERATOR => ['dashboard', 'scanner', 'pending', 'upload', 'accounts'],
-        self::ROLE_AGENT => ['dashboard', 'accounts'],
+        self::ROLE_AGENT => ['dashboard', 'accounts', 'leads_view'],
     ];
 
     protected $fillable = [

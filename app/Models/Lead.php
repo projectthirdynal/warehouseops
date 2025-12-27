@@ -8,15 +8,27 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Lead extends Model
 {
+    const STATUS_NEW = 'NEW';
+    const STATUS_CALLING = 'CALLING';
+    const STATUS_NO_ANSWER = 'NO_ANSWER';
+    const STATUS_REJECT = 'REJECT';
+    const STATUS_CALLBACK = 'CALLBACK';
+    const STATUS_SALE = 'SALE';
+    const STATUS_REORDER = 'REORDER';
+    const STATUS_DELIVERED = 'DELIVERED';
+    const STATUS_CANCELLED = 'CANCELLED';
+
     protected $fillable = [
         'name',
         'phone',
         'address',
         'city',
         'state',
-        'status',          // NEW, CALLING, NO_ANSWER, REJECT, CALLBACK, NOT_INTERESTED, SALE, DELIVERED, CANCELLED
+        'status',
+        'source',
         'assigned_to',
         'uploaded_by',
+        'original_agent_id',
         'last_called_at',
         'call_attempts',
         'notes'
@@ -42,5 +54,15 @@ class Lead extends Model
     public function logs(): HasMany
     {
         return $this->hasMany(LeadLog::class)->orderBy('created_at', 'desc');
+    }
+
+    public function isLocked(): bool
+    {
+        return in_array($this->status, [self::STATUS_SALE, self::STATUS_DELIVERED]);
+    }
+
+    public function isFinalized(): bool
+    {
+        return in_array($this->status, [self::STATUS_SALE, self::STATUS_DELIVERED, self::STATUS_CANCELLED]);
     }
 }
