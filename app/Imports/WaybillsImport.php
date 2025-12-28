@@ -48,7 +48,7 @@ class WaybillsImport implements ToCollection, WithHeadingRow, WithChunkReading
                 'remarks' => $row['remarks'] ?? null,
                 'status' => isset($row['order_status']) ? strtolower($row['order_status']) : 'pending',
                 'batch_ready' => $this->batchReady,
-                'signing_time' => $this->parseDate($row['signing_time'] ?? $row['signingtime'] ?? null),
+                'signing_time' => $this->parseDate($row['signing_time'] ?? $row['signingtime'] ?? $row['submission_time'] ?? $row['submissiontime'] ?? null),
                 'created_at' => $now,
                 'updated_at' => $now,
             ];

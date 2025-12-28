@@ -31,14 +31,18 @@ class Lead extends Model
         'original_agent_id',
         'last_called_at',
         'call_attempts',
-        'notes'
+        'notes',
+        'signing_time',
+        'submission_time'
     ];
 
     protected $casts = [
         'last_called_at' => 'datetime',
         'call_attempts' => 'integer',
         'assigned_to' => 'integer',
-        'uploaded_by' => 'integer'
+        'uploaded_by' => 'integer',
+        'signing_time' => 'datetime',
+        'submission_time' => 'datetime'
     ];
 
     public function assignedAgent(): BelongsTo
