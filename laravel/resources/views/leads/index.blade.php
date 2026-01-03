@@ -308,7 +308,6 @@
                                 <input type="checkbox" id="selectAll" class="custom-chk">
                             </th>
                             <th class="py-3 px-3">Customer</th>
-                            <th class="py-3" style="width: 140px;">History</th>
                             <th class="py-3">Location</th>
                             <th class="py-3">Status</th>
                             <th class="py-3">Last Activity</th>
@@ -329,36 +328,26 @@
                             <td class="px-3">
                                 <div>
                                     <div class="fw-bold text-white mb-0 h6">{{ $lead->name }}</div>
-                                    <div class="text-info small fs-7 mt-1">
-                                        <i class="fas fa-phone-alt me-1 opacity-50"></i> {{ $lead->phone }}
+                                    <div class="text-info small fs-7 mt-1 d-flex align-items-center gap-2">
+                                        <span><i class="fas fa-phone-alt me-1 opacity-50"></i> {{ $lead->phone }}</span>
+                                        
+                                        @if($lead->history)
+                                            <div class="d-flex align-items-center gap-2 ms-2" data-bs-toggle="tooltip" data-bs-html="true" title="Success: {{ $lead->history['completed'] }}/{{ $lead->history['total'] }}<br>Returned: {{ $lead->history['returned'] }}<br>Rate: {{ $lead->history['rate'] }}%">
+                                                <div class="progress bg-dark border border-white border-opacity-10" style="width: 40px; height: 6px;">
+                                                    <div class="progress-bar bg-{{ $lead->history['class'] }}" role="progressbar" style="width: {{ $lead->history['rate'] }}%"></div>
+                                                </div>
+                                                @if($lead->history['returned'] > 0)
+                                                    <i class="fas fa-exclamation-triangle text-danger" style="font-size: 10px;"></i>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </div>
                                     @if($lead->previous_item)
                                         <div class="text-white-50 small text-xs mt-1">
                                              <span class="opacity-75">Prev Product:</span> <span class="fw-bold text-white">{{ $lead->previous_item }}</span>
                                         </div>
                                     @endif
-                                    
                                 </div>
-                            </td>
-                            <td>
-                                @if($lead->history)
-                                <div class="p-1">
-                                    <div class="d-flex justify-content-between text-xs mb-1">
-                                        <span class="text-white-50">Score: <span class="text-{{ $lead->history['class'] }} fw-bold">{{ $lead->history['rate'] }}%</span></span>
-                                    </div>
-                                    <div class="progress bg-white bg-opacity-10" style="height: 4px; margin-bottom: 4px;">
-                                        <div class="progress-bar bg-{{ $lead->history['class'] }}" role="progressbar" style="width: {{ $lead->history['rate'] }}%"></div>
-                                    </div>
-                                    <div class="d-flex justify-content-between text-xs text-white-50">
-                                        <span>{{ $lead->history['completed'] }}/{{ $lead->history['total'] }}</span>
-                                        @if($lead->history['returned'] > 0)
-                                            <span class="text-danger"><i class="fas fa-undo"></i> {{ $lead->history['returned'] }}</span>
-                                        @endif
-                                    </div>
-                                </div>
-                                @else
-                                <span class="text-white-50 text-xs">—</span>
-                                @endif
                             </td>
                             <td>
                                 <div>
