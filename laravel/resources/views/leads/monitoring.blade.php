@@ -311,7 +311,7 @@
                         <td>
                             @if($lead->last_called_at)
                                 <div>{{ $lead->last_called_at->diffForHumans() }}</div>
-                                <small>{{ $lead->last_called_at->format('M d, H:i') }}</small>
+                                <small>{{ $lead->last_called_at->setTimezone('Asia/Manila')->format('M d, h:i A') }}</small>
                             @else
                                 <span style="color: var(--text-muted);">No activity</span>
                             @endif
