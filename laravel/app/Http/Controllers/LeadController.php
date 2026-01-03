@@ -280,7 +280,7 @@ class LeadController extends Controller
         } else {
             // Admins/TLs can filter by assignment scope
             $scope = $request->input('scope', 'all');
-            if ($scope === 'unassigned') {
+            if ($scope === 'fresh' || $scope === 'unassigned') {
                 $query->whereNull('assigned_to');
             } elseif ($scope === 'assigned') {
                 $query->whereNotNull('assigned_to');
@@ -481,16 +481,18 @@ class LeadController extends Controller
         // SAFE CLEANUP:
         // 1. Delete leads that are NOT converted (No Waybills, Not Sale/Delivered)
         // 2. Preserve strictly anything that has financial implication
+        // 3. Preserve anything currently ASSIGNED to an agent (Active Work)
         
         $deleted = \App\Models\Lead::whereNotIn('status', [
                 \App\Models\Lead::STATUS_SALE, 
                 \App\Models\Lead::STATUS_DELIVERED, 
                 \App\Models\Lead::STATUS_RETURNED
             ])
+            ->whereNull('assigned_to') // PROTECT ASSIGNED LEADS
             ->whereDoesntHave('waybills') // Ensure NO waybills are attached
             ->delete();
         
-        return redirect()->route('leads.index')->with('success', "Cleaner finished. Removed {$deleted} unused leads. Sales and Waybills were preserved.");
+        return redirect()->route('leads.index')->with('success', "Cleaner finished. Removed {$deleted} unassigned/unused leads. Active Agent leads and Sales were preserved.");
     }
 
     /**
