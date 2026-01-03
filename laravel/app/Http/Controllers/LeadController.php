@@ -488,11 +488,10 @@ class LeadController extends Controller
                 \App\Models\Lead::STATUS_DELIVERED, 
                 \App\Models\Lead::STATUS_RETURNED
             ])
-            ->whereNull('assigned_to') // PROTECT ASSIGNED LEADS
             ->whereDoesntHave('waybills') // Ensure NO waybills are attached
             ->delete();
         
-        return redirect()->route('leads.index')->with('success', "Cleaner finished. Removed {$deleted} unassigned/unused leads. Active Agent leads and Sales were preserved.");
+        return redirect()->route('leads.index')->with('success', "Cleaner finished. Removed {$deleted} leads. Sales and Waybills were preserved.");
     }
 
     /**
