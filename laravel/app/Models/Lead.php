@@ -41,7 +41,10 @@ class Lead extends Model
         'product_brand',
         'previous_item',
         'amount',
-        'assigned_at'
+        'assigned_at',
+        'total_cycles',
+        'max_cycles',
+        'is_exhausted'
     ];
 
     protected $casts = [
@@ -51,7 +54,10 @@ class Lead extends Model
         'uploaded_by' => 'integer',
         'signing_time' => 'datetime',
         'submission_time' => 'datetime',
-        'assigned_at' => 'datetime'
+        'assigned_at' => 'datetime',
+        'total_cycles' => 'integer',
+        'max_cycles' => 'integer',
+        'is_exhausted' => 'boolean'
     ];
 
     public function assignedAgent(): BelongsTo
@@ -69,6 +75,30 @@ class Lead extends Model
         return $this->hasMany(LeadLog::class)->orderBy('created_at', 'desc');
     }
 
+    /**
+     * Get all cycles for this lead.
+     */
+    public function cycles(): HasMany
+    {
+        return $this->hasMany(LeadCycle::class)->orderBy('cycle_number', 'desc');
+    }
+
+    /**
+     * Get the currently active cycle.
+     */
+    public function activeCycle()
+    {
+        return $this->hasOne(LeadCycle::class)->where('status', LeadCycle::STATUS_ACTIVE)->latest();
+    }
+
+    /**
+     * Get all waybills linked to this lead.
+     */
+    public function waybills(): HasMany
+    {
+        return $this->hasMany(Waybill::class);
+    }
+
     public function isLocked(): bool
     {
         return in_array($this->status, [self::STATUS_SALE, self::STATUS_DELIVERED]);
@@ -82,5 +112,53 @@ class Lead extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class)->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Check if this lead can be recycled.
+     * Returns true if recyclable, or an error message string if not.
+     */
+    public function canRecycle(): bool|string
+    {
+        // Check if already exhausted
+        if ($this->is_exhausted) {
+            return 'Lead has exceeded maximum recycle attempts.';
+        }
+
+        // Check if there's an active cycle
+        if ($this->activeCycle) {
+            return 'Lead has an active assignment cycle.';
+        }
+
+        // Check for active waybills (not delivered or cancelled)
+        $activeWaybill = $this->waybills()
+            ->whereNotIn('status', ['DELIVERED', 'CANCELLED', 'RETURNED'])
+            ->exists();
+        
+        if ($activeWaybill) {
+            return 'Lead has an active waybill in transit.';
+        }
+
+        // Check cooldown period (12 hours since last cycle closed)
+        $lastCycle = $this->cycles()->whereNotNull('closed_at')->first();
+        if ($lastCycle && $lastCycle->closed_at->diffInHours(now()) < 12) {
+            return 'Lead is in cooldown period. Try again after ' . $lastCycle->closed_at->addHours(12)->diffForHumans();
+        }
+
+        return true;
+    }
+
+    /**
+     * Increment cycle count and check exhaustion.
+     */
+    public function incrementCycleCount(): void
+    {
+        $this->total_cycles++;
+        
+        if ($this->total_cycles >= $this->max_cycles) {
+            $this->is_exhausted = true;
+        }
+        
+        $this->save();
     }
 }

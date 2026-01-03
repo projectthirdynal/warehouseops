@@ -12,6 +12,7 @@ use App\Http\Controllers\BatchScanController;
 use App\Http\Controllers\PendingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\LeadReportController;
 
 // Authentication routes (public)
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -101,6 +102,11 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/leads-export', [LeadController::class, 'export'])->name('leads.export');
             Route::get('/leads-export-jnt', [LeadController::class, 'exportJNT'])->name('leads.exportJNT');
             Route::post('/leads-clear', [LeadController::class, 'clear'])->name('leads.clear');
+            
+            // Lead Cycle Reports
+            Route::get('/leads-reports/agent-performance', [LeadReportController::class, 'agentPerformance'])->name('leads.reports.agentPerformance');
+            Route::get('/leads-reports/recycling-patterns', [LeadReportController::class, 'recyclingPatterns'])->name('leads.reports.recyclingPatterns');
+            Route::get('/leads/{lead}/history', [LeadReportController::class, 'leadHistory'])->name('leads.history');
         });
     });
 });

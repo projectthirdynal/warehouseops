@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Lead;
+use App\Models\LeadCycle;
 use App\Models\LeadLog;
 use App\Models\Order;
 use App\Models\User;
@@ -11,6 +12,13 @@ use Illuminate\Support\Facades\Log;
 
 class LeadService
 {
+    protected LeadCycleService $cycleService;
+
+    public function __construct(LeadCycleService $cycleService)
+    {
+        $this->cycleService = $cycleService;
+    }
+
     /**
      * Create a new lead
      */
@@ -39,8 +47,8 @@ class LeadService
             
             // Update metadata if it's a call-related status
             if (in_array($newStatus, [Lead::STATUS_NO_ANSWER, Lead::STATUS_REJECT, Lead::STATUS_CALLBACK, Lead::STATUS_SALE])) {
-                $lead->last_called_at = now();
-                $lead->call_attempts++;
+                // Record call on the active cycle
+                $this->cycleService->recordCall($lead, $actor, $note);
             }
 
             // Update additional attributes if provided
@@ -56,6 +64,12 @@ class LeadService
             if ($newStatus === Lead::STATUS_SALE) {
                 if ($oldStatus !== Lead::STATUS_SALE) {
                     $lead->submitted_at = now();
+                }
+
+                // Close the active cycle as SALE
+                $activeCycle = $lead->activeCycle;
+                if ($activeCycle) {
+                    $this->cycleService->closeCycle($activeCycle, LeadCycle::STATUS_CLOSED_SALE, $actor, 'Lead converted to sale');
                 }
 
                 // Create a historical order record
@@ -74,17 +88,23 @@ class LeadService
                     'notes' => $note
                 ]);
             }
+
+            // Handle REJECT status - close cycle
+            if ($newStatus === Lead::STATUS_REJECT) {
+                $activeCycle = $lead->activeCycle;
+                if ($activeCycle) {
+                    $this->cycleService->closeCycle($activeCycle, LeadCycle::STATUS_CLOSED_REJECT, $actor, $note ?? 'Lead rejected');
+                }
+            }
             
             if ($note) {
-                // Append note to main notes
-                $date = now()->format('Y-m-d H:i');
-                $newNoteEntry = "[{$date} {$actor->name}]: {$note}";
-                $lead->notes = $lead->notes ? $lead->notes . "\n" . $newNoteEntry : $newNoteEntry;
+                // Add structured note to cycle
+                $this->cycleService->addNote($lead, $note, $actor, 'status_change');
             }
 
             $lead->save();
 
-            // Create Log Entry
+            // Create Log Entry (legacy system)
             LeadLog::create([
                 'lead_id' => $lead->id,
                 'user_id' => $actor->id,
@@ -97,37 +117,30 @@ class LeadService
     }
 
     /**
-     * Bulk assign leads to an agent
+     * Bulk assign leads to an agent using the cycle system
      */
     public function assignLeads(array $leadIds, int $agentId, User $assigner): int
     {
-        $count = 0;
+        $agent = User::findOrFail($agentId);
+        $results = $this->cycleService->distributeLeads($leadIds, $agent, $assigner);
         
-        DB::transaction(function () use ($leadIds, $agentId, $assigner, &$count) {
-            $leads = Lead::whereIn('id', $leadIds)->get();
-            
-            foreach ($leads as $lead) {
-                $oldAgentId = $lead->assigned_to;
-                if ($oldAgentId === $agentId) continue;
+        // Log failures for admin visibility
+        if ($results['failed'] > 0) {
+            Log::warning("Lead Assignment Failures", [
+                'agent_id' => $agentId,
+                'assigner_id' => $assigner->id,
+                'errors' => $results['errors']
+            ]);
+        }
 
-                $lead->assigned_to = $agentId;
-                $lead->assigned_at = now();
-                $lead->save();
-                
-                // Log assignment
-                LeadLog::create([
-                    'lead_id' => $lead->id,
-                    'user_id' => $assigner->id,
-                    'action' => 'assignment',
-                    'description' => "Assigned to User ID {$agentId}",
-                    'old_status' => $lead->status,
-                    'new_status' => $lead->status
-                ]);
-                
-                $count++;
-            }
-        });
+        return $results['success'];
+    }
 
-        return $count;
+    /**
+     * Get the cycle service for direct access if needed.
+     */
+    public function getCycleService(): LeadCycleService
+    {
+        return $this->cycleService;
     }
 }
