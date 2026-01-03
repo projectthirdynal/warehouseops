@@ -1,21 +1,55 @@
+# Project Exclusions
+vendor/
+node_modules/
 *.log
 .DS_Store
-.phpactor.json
-.phpunit.result.cache
-/.fleet
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
-/node_modules
-/public/build
-/public/hot
-/public/storage
-/storage/*.key
-/storage/pail
-/vendor
-Homestead.json
-Homestead.yaml
 Thumbs.db
+composer.lock
+package-lock.json
+
+# Laravel Specific (Root/laravel)
+laravel/.env
+laravel/storage/*.key
+laravel/storage/pail
+laravel/public/storage
+laravel/public/hot
+laravel/public/build
+laravel/.phpunit.result.cache
+
+# Data Files & Archives
+*.xlsx
+*.xls
+*.tar.gz
+*.ods
+database/*.sql
+
+# Tooling
+.claude/
+CLAUDE.md
+.idea/
+.vscode/
+
+# Legacy Files
+index.php
+scan.php
+scanner.php
+upload.php
+upload-page.php
+upload-batch.php
+upload-batch-page.php
+waybills.php
+setup.sh
+inventory_system_implementation_prompt.md
+sa.xls
+sample.xlsx
+waybill_deploy.tar.gz
+base addresses map.xlsx
+Untitled 1.ods
+api/
+assets/
+components/
+includes/
+styles/
+database/batch_ready.sql
+database/batch_scanning.sql
+database/schema.sql

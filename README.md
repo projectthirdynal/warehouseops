@@ -1,231 +1,177 @@
 # Waybill Scanning System
 
-A comprehensive Laravel-based warehouse operations management system for tracking and managing waybills throughout the logistics lifecycle.
+A modern PHP-based waybill scanning and dispatch management system with PostgreSQL database.
 
-![Laravel](https://img.shields.io/badge/Laravel-11.x-FF2D20?style=flat-square&logo=laravel)
-![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791?style=flat-square&logo=postgresql)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+## Features
 
-## 📋 Overview
+- 📤 **Bulk Upload**: Import waybill data from XLSX files (5000+ rows supported)
+- 📱 **Barcode Scanner**: Scan waybills for dispatch with barcode scanner support
+- 📊 **Dashboard**: Real-time statistics and tracking
+- 🔍 **Search & Filter**: Advanced search capabilities
+- 🎨 **Modern UI**: Beautiful dark-themed interface with smooth animations
+- 🔔 **Audio Feedback**: Beep sounds for scan confirmation
 
-The Waybill Scanning System streamlines warehouse operations by providing real-time tracking, batch scanning, and comprehensive reporting for waybill management. Built with Laravel 11 and deployed on a high-availability cluster.
+## Requirements
 
-### Key Features
-
-- **📊 Real-Time Dashboard** - Monitor waybill statuses with live statistics
-- **📦 Batch Scanning** - Process multiple waybills efficiently with barcode scanning
-- **📁 Excel Import** - Bulk upload waybills via Excel files
-- **📈 Status Monitoring** - Track IN TRANSIT, DELIVERED, DELIVERING, RETURNED, and HQ Scheduling statuses
-- **📝 Manifest Generation** - Automatically generate dispatch manifests
-- **📜 History Tracking** - Access past batch sessions and manifests
-- **🔍 Advanced Search** - Filter and search waybills by multiple criteria
-- **👥 User Management** - Role-based access control for staff
-
-## 🎯 System Architecture
-
-### Deployment
-
-- **Load Balancer**: HAProxy (192.168.120.38)
-- **App Server 1**: 192.168.120.33
-- **App Server 2**: 192.168.120.37
-- **Database**: PostgreSQL 15+ (centralized)
-- **Web Server**: Nginx + PHP-FPM 8.2
-
-### Technologies
-
-- **Backend**: Laravel 11.x
-- **Database**: PostgreSQL with Eloquent ORM
-- **Frontend**: Blade Templates, Vanilla JavaScript
-- **Styling**: Custom CSS with modern dark theme
-- **File Processing**: PhpSpreadsheet for Excel imports
-- **Session Storage**: LocalStorage for manifest persistence
-
-## 🚀 Installation
-
-### Prerequisites
-
-- PHP >= 8.2
-- PostgreSQL >= 15
+- PHP 7.4 or higher
+- PostgreSQL 12 or higher
 - Composer
-- Node.js & NPM (for asset compilation)
-- Nginx or Apache
+- Web server (Apache/Nginx)
+- PHP extensions: pdo_pgsql, mbstring, zip, xml
 
-### Local Setup
+## Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/projectthirdynal/warehouseops.git
-   cd warehouseops
-   ```
-
-2. **Install dependencies**
-   ```bash
-   composer install
-   npm install
-   ```
-
-3. **Configure environment**
-   ```bash
-   cp .env.example .env
-   php artisan key:generate
-   ```
-
-4. **Update database credentials in `.env`**
-   ```env
-   DB_CONNECTION=pgsql
-   DB_HOST=your-database-host
-   DB_PORT=5432
-   DB_DATABASE=waybill_system
-   DB_USERNAME=your-username
-   DB_PASSWORD=your-password
-   ```
-
-5. **Run migrations**
-   ```bash
-   php artisan migrate
-   ```
-
-6. **Start development server**
-   ```bash
-   php artisan serve
-   ```
-
-## 📐 Database Schema
-
-### Key Tables
-
-- **waybills** - Core waybill data with status tracking
-- **uploads** - Excel file upload records
-- **scanned_waybills** - Individual scan records
-- **batch_scan_sessions** - Batch scanning sessions
-- **batch_scan_items** - Items within batch sessions
-
-### Status Workflow
-
-```
-PENDING → DISPATCHED → IN TRANSIT → DELIVERING → DELIVERED
-                                             ↓
-                                         RETURNED
-```
-
-## 🎨 Features Detail
-
-### Dashboard
-
-- Real-time status cards for all waybill states
-- Period-based delivery and return rate analytics
-- Recent dispatch scans with product information
-- Date range filtering
-
-### Scanner Section
-
-- **Upload Tab**: Excel file upload for batch processing
-- **Scan Tab**: Real-time barcode scanning
-- **Ready Tab**: View waybills ready for dispatch
-- **History Tab**: Access past batch sessions and manifests
-
-### Accounts Section
-
-- Complete waybill listing with pagination
-- Advanced filtering by status, date, and search terms
-- Product information display (formerly sender)
-- Date fallback to created_at when signing_time is unavailable
-
-## 🔧 Configuration
-
-### Excel Import Format
-
-The system accepts Excel files with the following columns:
-
-- Waybill Number
-- Sender Name/Product
-- Sender Address
-- Sender Phone
-- Receiver Name
-- Receiver Address
-- Receiver Phone
-- Destination
-- Number of Items
-- Weight
-- Express Type/Service Type
-- COD Amount
-- Remarks
-- Order Status
-- Signing Time
-
-## 🚢 Deployment
-
-### Production Deployment
-
-Use the automated deployment script:
+### 1. Clone or Download
 
 ```bash
-cd deployment
-bash scripts/deploy-app.sh
+cd /home/it-admin/Documents/v3
 ```
 
-This will:
-- Sync code to both app servers
-- Install dependencies (production mode)
-- Run migrations
-- Clear and cache configurations
-- Restart PHP-FPM services
-
-### Manual Deployment Steps
+### 2. Install PHP Dependencies
 
 ```bash
-# On each app server
-cd /var/www/waybill
-git pull origin main
-composer install --no-dev --optimize-autoloader
-php artisan migrate --force
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-sudo systemctl restart php8.2-fpm nginx
+composer install
 ```
 
-## 📊 Status Color Coding
+### 3. Setup PostgreSQL Database
 
-- **Pending** - Gray/Default
-- **Dispatched** - Blue
-- **In Transit** - Info Blue
-- **Delivering** - Warning Yellow
-- **Delivered** - Success Green
-- **Returned** - Red
-- **HQ Scheduling** - Info Blue
+```bash
+# Create database
+sudo -u postgres createdb waybill_system
 
-## 🔐 Security
+# Import schema
+sudo -u postgres psql waybill_system < database/schema.sql
+```
 
-- Environment variables for sensitive configuration
-- CSRF protection on all forms
-- SQL injection prevention via Eloquent ORM
-- Input validation and sanitization
-- Secure file upload handling
+### 4. Configure Database Connection
 
-## 🤝 Contributing
+Edit `config/database.php` and update your credentials:
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+```php
+define('DB_HOST', 'localhost');
+define('DB_PORT', '5432');
+define('DB_NAME', 'waybill_system');
+define('DB_USER', 'postgres');
+define('DB_PASS', 'your_password');
+```
 
-## 📝 License
+### 5. Start PHP Development Server
 
-This project is licensed under the MIT License.
+```bash
+php -S localhost:8000
+```
 
-## 👥 Team
+### 6. Access the Application
 
-**Project Thirdynal**
-- Warehouse Operations System
-- Version 4.0
+Open your browser and navigate to:
+```
+http://localhost:8000
+```
 
-## 📞 Support
+## Excel File Format
 
-For issues and questions, please open an issue on GitHub.
+The XLSX file should have the following columns (in order):
 
----
+1. Waybill Number
+2. Sender Name
+3. Sender Address
+4. Sender Phone
+5. Receiver Name
+6. Receiver Address
+7. Receiver Phone
+8. Destination
+9. Weight (kg)
+10. Quantity
+11. Service Type
+12. COD Amount
+13. Remarks
 
-**Built with ❤️ using Laravel**
+## Usage
+
+### Upload Waybills
+
+1. Go to **Upload** page
+2. Select or drag-and-drop your XLSX file
+3. Click **Upload File**
+4. Wait for processing to complete
+
+### Scan Waybills
+
+1. Go to **Scanner** page
+2. Use a barcode scanner or manually enter waybill number
+3. Click **Scan Waybill** or press Enter
+4. System will validate and mark as dispatched
+
+### View Waybills
+
+1. Go to **Waybills** page
+2. Search by waybill number, sender, receiver, or destination
+3. Filter by status (Pending/Dispatched)
+
+## Database Schema
+
+- **uploads**: Track batch uploads
+- **waybills**: Store individual waybill records
+- **scanned_waybills**: Track dispatch scans
+
+## File Structure
+
+```
+v3/
+├── api/                    # API endpoints
+├── assets/
+│   ├── css/               # Stylesheets
+│   └── js/                # JavaScript files
+├── config/                # Configuration files
+├── database/              # Database schema
+├── includes/              # PHP includes and functions
+├── index.php              # Dashboard
+├── scanner.php            # Scanner interface
+├── upload-page.php        # Upload interface
+├── waybills.php           # Waybills list
+├── upload.php             # Upload handler
+├── scan.php               # Scan handler
+└── composer.json          # PHP dependencies
+```
+
+## Security Notes
+
+- Update database credentials in `config/database.php`
+- Set proper file permissions
+- Use HTTPS in production
+- Implement user authentication for production use
+- Validate and sanitize all inputs
+
+## Troubleshooting
+
+### PostgreSQL Connection Error
+
+```bash
+# Check if PostgreSQL is running
+sudo systemctl status postgresql
+
+# Start PostgreSQL
+sudo systemctl start postgresql
+```
+
+### Permission Issues
+
+```bash
+# Set proper permissions
+chmod -R 755 /home/it-admin/Documents/v3
+```
+
+### PHP Extensions Missing
+
+```bash
+# Install required extensions (Ubuntu/Debian)
+sudo apt-get install php-pgsql php-mbstring php-zip php-xml
+```
+
+## License
+
+This project is open source and available under the MIT License.
+
+## Support
+
+For issues and feature requests, please contact your system administrator.
