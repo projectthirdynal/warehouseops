@@ -303,8 +303,8 @@
                                         'for return' => 4,
                                         'returned' => 4
                                     ];
-                                    $currentStep = $statusMap[$waybill->status] ?? 0;
-                                    $isReturned = in_array($waybill->status, ['returned', 'for return']);
+                                    $currentStep = $statusMap[strtolower($waybill->status)] ?? 0;
+                                    $isReturned = in_array(strtolower($waybill->status), ['returned', 'for return']);
                                     $steps = [
                                         ['label' => 'Pending', 'icon' => 'fa-box'],
                                         ['label' => 'HQ', 'icon' => 'fa-building'],
@@ -315,7 +315,7 @@
                                 @endphp
                                 <div class="order-tracking">
                                     @foreach($steps as $index => $step)
-                                        <div class="tracking-step {{ $index <= $currentStep ? 'completed' : '' }} {{ $index == $currentStep ? 'current' : '' }}">
+                                        <div class="tracking-step {{ $index <= $currentStep ? 'completed' : '' }} {{ $index == $currentStep && $index < 4 ? 'current' : '' }}">
                                             <div class="step-icon">
                                                 <i class="fas {{ $step['icon'] }}"></i>
                                             </div>
