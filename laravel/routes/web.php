@@ -115,6 +115,13 @@ Route::middleware(['auth'])->group(function () {
             // Agent Governance
             Route::get('/agents/governance', [App\Http\Controllers\AgentGovernanceController::class, 'index'])->name('agents.governance');
             Route::post('/agents/flags/{flag}/resolve', [App\Http\Controllers\AgentGovernanceController::class, 'resolve'])->name('agents.flags.resolve');
+            
+            // Operations Monitoring
+            Route::get('/monitoring/dashboard', [App\Http\Controllers\MonitoringController::class, 'dashboard'])->name('monitoring.dashboard');
+            Route::get('/monitoring/live-stats', [App\Http\Controllers\MonitoringController::class, 'liveStats'])->name('monitoring.live-stats');
+            Route::get('/monitoring/stuck-cycles', [App\Http\Controllers\MonitoringController::class, 'stuckCycles'])->name('monitoring.stuck-cycles');
+            Route::get('/monitoring/blocked-leads', [App\Http\Controllers\MonitoringController::class, 'blockedLeads'])->name('monitoring.blocked-leads');
+            Route::get('/monitoring/recycle-heatmap', [App\Http\Controllers\MonitoringController::class, 'recycleHeatmap'])->name('monitoring.recycle-heatmap');
         });
     });
 });
