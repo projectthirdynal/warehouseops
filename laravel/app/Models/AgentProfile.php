@@ -15,7 +15,10 @@ class AgentProfile extends Model
         'priority_weight',
         'is_available',
         'conversion_rate',
-        'avg_calls_per_cycle'
+        'avg_calls_per_cycle',
+        'avg_time_to_first_call',
+        'recycle_abuse_rate',
+        'fresh_conversion_rate'
     ];
 
     protected $casts = [
@@ -25,7 +28,10 @@ class AgentProfile extends Model
         'priority_weight' => 'float',
         'is_available' => 'boolean',
         'conversion_rate' => 'float',
-        'avg_calls_per_cycle' => 'integer'
+        'avg_calls_per_cycle' => 'integer',
+        'avg_time_to_first_call' => 'integer',
+        'recycle_abuse_rate' => 'float',
+        'fresh_conversion_rate' => 'float'
     ];
 
     /**

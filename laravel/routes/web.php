@@ -111,6 +111,10 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/leads-reports/agent-performance', [LeadReportController::class, 'agentPerformance'])->name('leads.reports.agentPerformance');
             Route::get('/leads-reports/recycling-patterns', [LeadReportController::class, 'recyclingPatterns'])->name('leads.reports.recyclingPatterns');
             Route::get('/leads/{lead}/history', [LeadReportController::class, 'leadHistory'])->name('leads.history');
+            
+            // Agent Governance
+            Route::get('/agents/governance', [App\Http\Controllers\AgentGovernanceController::class, 'index'])->name('agents.governance');
+            Route::post('/agents/flags/{flag}/resolve', [App\Http\Controllers\AgentGovernanceController::class, 'resolve'])->name('agents.flags.resolve');
         });
     });
 });
