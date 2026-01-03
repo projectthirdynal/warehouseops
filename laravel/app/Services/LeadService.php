@@ -15,15 +15,18 @@ class LeadService
     protected LeadCycleService $cycleService;
     protected LeadStateMachine $stateMachine;
     protected LeadCycleLogicGuardian $guardian;
+    protected SnapshotService $snapshotService;
 
     public function __construct(
         LeadCycleService $cycleService, 
         LeadStateMachine $stateMachine,
-        LeadCycleLogicGuardian $guardian
+        LeadCycleLogicGuardian $guardian,
+        SnapshotService $snapshotService
     ) {
         $this->cycleService = $cycleService;
         $this->stateMachine = $stateMachine;
         $this->guardian = $guardian;
+        $this->snapshotService = $snapshotService;
     }
 
     /**
@@ -54,6 +57,11 @@ class LeadService
 
         // Enforce state transitions
         $this->stateMachine->validateTransition($lead, $newStatus, $actor);
+
+        // Disaster Safety: Pre-Sale Snapshot
+        if ($newStatus === Lead::STATUS_SALE && $oldStatus !== Lead::STATUS_SALE) {
+            $this->snapshotService->capture($lead, 'pre_sale_safety');
+        }
 
         DB::transaction(function () use ($lead, $newStatus, $note, $oldStatus, $actor, $attributes) {
             $lead->status = $newStatus;
