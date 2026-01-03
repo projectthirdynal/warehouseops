@@ -77,8 +77,12 @@
                 <h1 class="page-title me-4 mb-0">Leads</h1>
                 <div class="search-container flex-grow-1 max-w-400">
                     <form action="{{ route('leads.index') }}" method="GET" class="position-relative">
-                        <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-white-50"></i>
-                        <input type="text" name="search" class="form-control bg-opacity-5 border-white border-opacity-10 text-white rounded-3 ps-5 py-2" placeholder="Search by name, phone, or prev..." value="{{ request('search') }}">
+                        <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"></i>
+                        <input type="text" name="search" 
+                            class="form-control text-white rounded-3 ps-5 py-2" 
+                            style="background-color: #1a1d24; border: 1px solid #2d3342;" 
+                            placeholder="Search by name, phone, or prev..." 
+                            value="{{ request('search') }}">
                     </form>
                 </div>
             </div>
