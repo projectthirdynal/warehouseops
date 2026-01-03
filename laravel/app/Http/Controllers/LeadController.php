@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Lead;
 use App\Models\User;
 use App\Services\LeadService;
+use App\Services\DistributionEngine;
 use App\Imports\LeadsImport;
 use App\Exports\JNTExport;
 use Illuminate\Http\Request;
@@ -16,10 +17,12 @@ use Illuminate\Support\Facades\Log;
 class LeadController extends Controller
 {
     protected $leadService;
+    protected $distributionEngine;
 
-    public function __construct(LeadService $leadService)
+    public function __construct(LeadService $leadService, DistributionEngine $distributionEngine)
     {
         $this->leadService = $leadService;
+        $this->distributionEngine = $distributionEngine;
     }
 
     /**
@@ -476,5 +479,67 @@ class LeadController extends Controller
         \App\Models\Lead::truncate();
         
         return redirect()->route('leads.index')->with('success', 'Lead repository cleared successfully.');
+    }
+
+    /**
+     * Smart distribute leads using the DistributionEngine.
+     * Automatically assigns leads to the best matching agents.
+     */
+    public function smartDistribute(Request $request)
+    {
+        $request->validate([
+            'count' => 'required|integer|min:1|max:100',
+            'status' => 'nullable|string',
+            'previous_item' => 'nullable|string',
+            'recycle' => 'nullable|boolean'
+        ]);
+
+        $criteria = [
+            'count' => $request->count,
+            'status' => $request->status,
+            'previous_item' => $request->previous_item,
+            'recycle' => $request->boolean('recycle')
+        ];
+
+        $results = $this->distributionEngine->smartDistribute($criteria, Auth::user());
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'distributed' => $results['success'],
+                'failed' => $results['failed'],
+                'assignments' => $results['assignments'] ?? [],
+                'errors' => $results['errors']
+            ]);
+        }
+
+        if ($results['success'] > 0) {
+            return redirect()->route('leads.index')->with('success', 
+                "Smart distribution complete: {$results['success']} leads assigned, {$results['failed']} failed.");
+        }
+
+        $message = $results['message'] ?? 'No leads could be distributed.';
+        if (!empty($results['errors'])) {
+            $message .= ' Errors: ' . count($results['errors']);
+        }
+        
+        return back()->with('error', $message);
+    }
+
+    /**
+     * Get distribution statistics and agent availability.
+     */
+    public function distributionStats(Request $request)
+    {
+        $stats = $this->distributionEngine->getDistributionStats();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => $stats
+            ]);
+        }
+
+        return view('leads.distribution-stats', compact('stats'));
     }
 }

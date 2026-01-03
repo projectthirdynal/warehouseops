@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -44,6 +46,81 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Get the agent profile for this user.
+     */
+    public function profile(): HasOne
+    {
+        return $this->hasOne(AgentProfile::class);
+    }
+
+    /**
+     * Get all lead cycles assigned to this agent.
+     */
+    public function leadCycles(): HasMany
+    {
+        return $this->hasMany(LeadCycle::class, 'agent_id');
+    }
+
+    /**
+     * Get or create agent profile.
+     */
+    public function getOrCreateProfile(): AgentProfile
+    {
+        if (!$this->profile) {
+            return AgentProfile::create([
+                'user_id' => $this->id,
+                'max_active_cycles' => 10,
+                'product_skills' => [],
+                'regions' => [],
+                'priority_weight' => 1.0,
+                'is_available' => true
+            ]);
+        }
+        
+        return $this->profile;
+    }
+
+    /**
+     * Get active cycle count.
+     */
+    public function getActiveCycleCount(): int
+    {
+        return $this->leadCycles()
+            ->where('status', LeadCycle::STATUS_ACTIVE)
+            ->count();
+    }
+
+    /**
+     * Check if agent has capacity for more cycles.
+     */
+    public function hasCapacity(): bool
+    {
+        $profile = $this->profile;
+        if (!$profile) {
+            return true; // No profile = unlimited capacity
+        }
+        
+        return $this->getActiveCycleCount() < $profile->max_active_cycles;
+    }
+
+    /**
+     * Check if agent is available for distribution.
+     */
+    public function isAvailableForDistribution(): bool
+    {
+        if (!$this->is_active || $this->role !== self::ROLE_AGENT) {
+            return false;
+        }
+
+        $profile = $this->profile;
+        if ($profile && !$profile->is_available) {
+            return false;
+        }
+
+        return $this->hasCapacity();
     }
 
     /**
@@ -92,4 +169,3 @@ class User extends Authenticatable
         return self::getRoles()[$this->role] ?? 'Unknown';
     }
 }
-

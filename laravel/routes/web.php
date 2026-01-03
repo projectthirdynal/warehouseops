@@ -103,6 +103,10 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/leads-export-jnt', [LeadController::class, 'exportJNT'])->name('leads.exportJNT');
             Route::post('/leads-clear', [LeadController::class, 'clear'])->name('leads.clear');
             
+            // Smart Distribution
+            Route::post('/leads-smart-distribute', [LeadController::class, 'smartDistribute'])->name('leads.smartDistribute');
+            Route::get('/leads-distribution-stats', [LeadController::class, 'distributionStats'])->name('leads.distributionStats');
+            
             // Lead Cycle Reports
             Route::get('/leads-reports/agent-performance', [LeadReportController::class, 'agentPerformance'])->name('leads.reports.agentPerformance');
             Route::get('/leads-reports/recycling-patterns', [LeadReportController::class, 'recyclingPatterns'])->name('leads.reports.recyclingPatterns');
