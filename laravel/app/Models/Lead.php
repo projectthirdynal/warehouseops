@@ -18,6 +18,7 @@ class Lead extends Model
     const STATUS_DELIVERED = 'DELIVERED';
     const STATUS_RETURNED = 'RETURNED';
     const STATUS_CANCELLED = 'CANCELLED';
+    const STATUS_ARCHIVED = 'ARCHIVED';
 
     protected $fillable = [
         'name',
@@ -45,7 +46,9 @@ class Lead extends Model
         'assigned_at',
         'total_cycles',
         'max_cycles',
-        'is_exhausted'
+        'is_exhausted',
+        'quality_score',
+        'last_scored_at'
     ];
 
     protected $casts = [
@@ -58,7 +61,9 @@ class Lead extends Model
         'assigned_at' => 'datetime',
         'total_cycles' => 'integer',
         'max_cycles' => 'integer',
-        'is_exhausted' => 'boolean'
+        'is_exhausted' => 'boolean',
+        'quality_score' => 'integer',
+        'last_scored_at' => 'datetime'
     ];
 
     public function assignedAgent(): BelongsTo

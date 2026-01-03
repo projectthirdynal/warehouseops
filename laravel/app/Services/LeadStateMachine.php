@@ -16,20 +16,21 @@ class LeadStateMachine
             Lead::STATUS_CALLING,
             Lead::STATUS_NO_ANSWER,
             Lead::STATUS_REJECT,
-            // Cannot go directly to SALE, CALLBACK
+            Lead::STATUS_ARCHIVED, // Decay
         ],
         Lead::STATUS_CALLING => [
             Lead::STATUS_NO_ANSWER,
             Lead::STATUS_REJECT,
             Lead::STATUS_CALLBACK,
             Lead::STATUS_SALE,
-            Lead::STATUS_NEW, // Allowed for re-assignment
+            Lead::STATUS_NEW, 
         ],
         Lead::STATUS_NO_ANSWER => [
             Lead::STATUS_CALLING,
             Lead::STATUS_REJECT,
             Lead::STATUS_CALLBACK,
-            Lead::STATUS_SALE, // Can convert after a no-answer if they call back
+            Lead::STATUS_SALE, 
+            Lead::STATUS_ARCHIVED, // Decay
         ],
         Lead::STATUS_CALLBACK => [
             Lead::STATUS_CALLING,
@@ -38,26 +39,31 @@ class LeadStateMachine
             Lead::STATUS_SALE,
         ],
         Lead::STATUS_REJECT => [
-            Lead::STATUS_NEW, // Only system/admin can recycle to NEW
+            Lead::STATUS_NEW, 
+            Lead::STATUS_ARCHIVED, // Decay
         ],
         Lead::STATUS_SALE => [
-            Lead::STATUS_DELIVERED, // System/Waybill update
+            Lead::STATUS_DELIVERED, 
             Lead::STATUS_CANCELLED,
-            Lead::STATUS_REJECT, // Post-sale rejection
+            Lead::STATUS_REJECT, 
         ],
         Lead::STATUS_DELIVERED => [
-            Lead::STATUS_RETURNED, // System update
+            Lead::STATUS_RETURNED, 
         ],
         Lead::STATUS_RETURNED => [
-            Lead::STATUS_NEW, // System recycle
+            Lead::STATUS_NEW, 
         ],
         Lead::STATUS_CANCELLED => [
-            Lead::STATUS_NEW, // Reactivation
+            Lead::STATUS_NEW, 
+            Lead::STATUS_ARCHIVED, // Decay
         ],
         Lead::STATUS_REORDER => [ // Special status
             Lead::STATUS_NEW,
             Lead::STATUS_CALLING,
-        ]
+        ],
+        Lead::STATUS_ARCHIVED => [
+            Lead::STATUS_NEW, // Reactivation
+        ],
     ];
 
     /**
