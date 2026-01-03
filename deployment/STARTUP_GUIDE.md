@@ -29,6 +29,20 @@ bash /home/it-admin/Documents/v4/v4/deployment/scripts/restart-services.sh
 
 ---
 
+## 🛠️ Operational Maintenance Commands
+
+The following commands are essential for the daily operation of the Agent System. They are scheduled to run automatically, but can be run manually if needed.
+
+| Command | Schedule | Purpose |
+| :--- | :--- | :--- |
+| `php artisan leads:score` | 00:00 | **Archiving**: Decays lead scores and archives dead leads. |
+| `php artisan leads:analyze-agents` | 01:00 | **Governance**: Flags Recycle Abuse and Low Contact rates. |
+| `php artisan leads:guardian-audit` | 02:00 | **Audit**: Detects system drift stuck leads. |
+| `php artisan leads:snapshot-active` | 03:00 | **Safety**: Backs up all active lead states. |
+| `php artisan leads:restore {id}` | Manual | **Recovery**: Restores a lead to a previous snapshot state. |
+
+---
+
 ## 🏗️ Manual Service Management
 
 If you need to manage services on individual nodes, use the following commands.
@@ -50,10 +64,6 @@ Manage the web server, PHP processor, and background queue workers.
 | **Nginx** (Web) | Restart | `sudo systemctl restart nginx` |
 | **PHP-FPM** | Restart | `sudo systemctl restart php8.4-fpm` |
 | **Worker** (Queue) | Restart | `sudo systemctl restart waybill-worker` |
-
-> [!NOTE]
-> To check the status of all three at once:
-> `sudo systemctl status nginx php8.4-fpm waybill-worker`
 
 ### 3. Load Balancer (`192.168.120.38`)
 The entrance to the application.
