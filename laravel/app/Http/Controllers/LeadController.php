@@ -472,13 +472,25 @@ class LeadController extends Controller
     public function clear()
     {
         // Only Admin or TL can clear leads
-        if (Auth::user()->role !== 'admin' && Auth::user()->role !== 'superadmin' && Auth::user()->role !== 'TL') {
+        if (Auth::user()->role !== \App\Models\User::ROLE_ADMIN && 
+            Auth::user()->role !== \App\Models\User::ROLE_SUPERADMIN && 
+            Auth::user()->role !== 'TL') {
             abort(403);
         }
 
-        \App\Models\Lead::truncate();
+        // SAFE CLEANUP:
+        // 1. Delete leads that are NOT converted (No Waybills, Not Sale/Delivered)
+        // 2. Preserve strictly anything that has financial implication
         
-        return redirect()->route('leads.index')->with('success', 'Lead repository cleared successfully.');
+        $deleted = \App\Models\Lead::whereNotIn('status', [
+                \App\Models\Lead::STATUS_SALE, 
+                \App\Models\Lead::STATUS_DELIVERED, 
+                \App\Models\Lead::STATUS_RETURNED
+            ])
+            ->whereDoesntHave('waybills') // Ensure NO waybills are attached
+            ->delete();
+        
+        return redirect()->route('leads.index')->with('success', "Cleaner finished. Removed {$deleted} unused leads. Sales and Waybills were preserved.");
     }
 
     /**
