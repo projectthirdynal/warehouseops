@@ -16,6 +16,8 @@ class LeadStateMachine
             Lead::STATUS_CALLING,
             Lead::STATUS_NO_ANSWER,
             Lead::STATUS_REJECT,
+            Lead::STATUS_CALLBACK,
+            Lead::STATUS_SALE,
             Lead::STATUS_ARCHIVED, // Decay
         ],
         Lead::STATUS_CALLING => [
