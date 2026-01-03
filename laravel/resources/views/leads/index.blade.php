@@ -308,6 +308,7 @@
                                 <input type="checkbox" id="selectAll" class="custom-chk">
                             </th>
                             <th class="py-3 px-3">Customer</th>
+                            <th class="py-3" style="width: 140px;">History</th>
                             <th class="py-3">Location</th>
                             <th class="py-3">Status</th>
                             <th class="py-3">Last Activity</th>
@@ -337,21 +338,27 @@
                                         </div>
                                     @endif
                                     
-                                    @if($lead->history)
-                                    <div class="mt-2 p-1 rounded bg-dark border border-white border-opacity-5">
-                                        <div class="d-flex justify-content-between text-xs mb-1">
-                                            <span class="text-white-50">Score: <span class="text-{{ $lead->history['class'] }} fw-bold">{{ $lead->history['rate'] }}%</span></span>
-                                            <span class="text-white-50">{{ $lead->history['completed'] }}/{{ $lead->history['total'] }} Orders</span>
-                                        </div>
-                                        <div class="progress" style="height: 4px;">
-                                            <div class="progress-bar bg-{{ $lead->history['class'] }}" role="progressbar" style="width: {{ $lead->history['rate'] }}%"></div>
-                                        </div>
+                                </div>
+                            </td>
+                            <td>
+                                @if($lead->history)
+                                <div class="p-1">
+                                    <div class="d-flex justify-content-between text-xs mb-1">
+                                        <span class="text-white-50">Score: <span class="text-{{ $lead->history['class'] }} fw-bold">{{ $lead->history['rate'] }}%</span></span>
+                                    </div>
+                                    <div class="progress bg-white bg-opacity-10" style="height: 4px; margin-bottom: 4px;">
+                                        <div class="progress-bar bg-{{ $lead->history['class'] }}" role="progressbar" style="width: {{ $lead->history['rate'] }}%"></div>
+                                    </div>
+                                    <div class="d-flex justify-content-between text-xs text-white-50">
+                                        <span>{{ $lead->history['completed'] }}/{{ $lead->history['total'] }}</span>
                                         @if($lead->history['returned'] > 0)
-                                            <div class="text-xs text-danger mt-1"><i class="fas fa-undo-alt me-1"></i> {{ $lead->history['returned'] }} Returned</div>
+                                            <span class="text-danger"><i class="fas fa-undo"></i> {{ $lead->history['returned'] }}</span>
                                         @endif
                                     </div>
-                                    @endif
                                 </div>
+                                @else
+                                <span class="text-white-50 text-xs">—</span>
+                                @endif
                             </td>
                             <td>
                                 <div>
