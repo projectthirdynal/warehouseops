@@ -171,4 +171,31 @@ class Lead extends Model
         
         $this->save();
     }
+
+    /**
+     * Get history statistics for the lead.
+     * Uses waybills as specific "Orders" record from J&T.
+     */
+    public function getHistoryAttribute()
+    {
+        // Use eager loaded waybills if available to avoid N+1
+        $waybills = $this->relationLoaded('waybills') ? $this->waybills : $this->waybills()->get();
+        
+        $total = $waybills->count();
+        if ($total === 0) return null;
+
+        // Count statuses (case-insensitive check)
+        $completed = $waybills->filter(fn($w) => in_array(strtolower($w->status), ['delivered', 'completed', 'success']))->count();
+        $returned = $waybills->filter(fn($w) => strtolower($w->status) === 'returned')->count();
+        
+        $successRate = round(($completed / $total) * 100);
+        
+        return [
+            'total' => $total,
+            'completed' => $completed,
+            'returned' => $returned,
+            'rate' => $successRate,
+            'class' => $successRate >= 80 ? 'success' : ($successRate >= 50 ? 'warning' : 'danger')
+        ];
+    }
 }
