@@ -336,6 +336,21 @@
                                              <span class="opacity-75">Prev Product:</span> <span class="fw-bold text-white">{{ $lead->previous_item }}</span>
                                         </div>
                                     @endif
+                                    
+                                    @if($lead->history)
+                                    <div class="mt-2 p-1 rounded bg-dark border border-white border-opacity-5">
+                                        <div class="d-flex justify-content-between text-xs mb-1">
+                                            <span class="text-white-50">Score: <span class="text-{{ $lead->history['class'] }} fw-bold">{{ $lead->history['rate'] }}%</span></span>
+                                            <span class="text-white-50">{{ $lead->history['completed'] }}/{{ $lead->history['total'] }} Orders</span>
+                                        </div>
+                                        <div class="progress" style="height: 4px;">
+                                            <div class="progress-bar bg-{{ $lead->history['class'] }}" role="progressbar" style="width: {{ $lead->history['rate'] }}%"></div>
+                                        </div>
+                                        @if($lead->history['returned'] > 0)
+                                            <div class="text-xs text-danger mt-1"><i class="fas fa-undo-alt me-1"></i> {{ $lead->history['returned'] }} Returned</div>
+                                        @endif
+                                    </div>
+                                    @endif
                                 </div>
                             </td>
                             <td>

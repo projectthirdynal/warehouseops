@@ -136,9 +136,8 @@ class Lead extends Model
             return 'Lead has exceeded maximum recycle attempts.';
         }
 
-        // Check if there's an active cycle
         if ($this->activeCycle) {
-            return 'Lead has an active assignment cycle.';
+            return 'Lead is currently active in a cycle.';
         }
 
         // Check for active waybills (not delivered or cancelled)
