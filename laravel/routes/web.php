@@ -29,8 +29,8 @@ Route::get('/debug-config', function () {
 
 // Protected routes
 Route::middleware(['auth'])->group(function () {
-    // Dashboard - accessible by all authenticated users
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    // Dashboard - requires dashboard permission
+    Route::get('/', [DashboardController::class, 'index'])->middleware('role:dashboard')->name('dashboard');
     
     // Scanner - requires scanner permission
     Route::middleware(['role:scanner'])->group(function () {

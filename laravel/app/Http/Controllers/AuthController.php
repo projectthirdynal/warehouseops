@@ -47,6 +47,15 @@ class AuthController extends Controller
 
         Auth::login($user, $request->filled('remember'));
 
+        // Redirect based on permissions
+        if ($user->canAccess('dashboard')) {
+            return redirect()->intended(route('dashboard'));
+        }
+
+        if ($user->canAccess('leads_view')) {
+            return redirect()->intended(route('leads.index'));
+        }
+
         return redirect()->intended(route('dashboard'));
     }
 

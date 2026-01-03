@@ -5,24 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Waybill System')</title>
-    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}?v={{ time() }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}?v={{ filemtime(public_path('assets/css/style.css')) }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     @stack('styles')
     <style>
-        /* Sidebar Layout Styles */
+        /* ============================================
+           APP LAYOUT - Refined Sidebar & Header
+           ============================================ */
         .app-container {
             display: flex;
             min-height: 100vh;
+            background-color: var(--bg-primary);
         }
 
+        /* Sidebar */
         .sidebar {
-            width: 240px;
-            background: var(--bg-secondary);
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #0c1017 0%, #080b11 100%);
             border-right: 1px solid var(--border-primary);
             display: flex;
             flex-direction: column;
-            transition: width var(--transition-normal);
+            transition: width var(--transition-base);
             position: fixed;
             top: 0;
             left: 0;
@@ -31,85 +37,143 @@
         }
 
         .sidebar.collapsed {
-            width: 70px;
+            width: var(--sidebar-collapsed);
         }
 
         .sidebar-header {
-            padding: var(--space-4);
+            padding: var(--space-4) var(--space-4);
             border-bottom: 1px solid var(--border-primary);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            min-height: 64px;
         }
 
         .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
             font-size: var(--text-lg);
             font-weight: var(--font-bold);
             color: var(--accent-primary);
+            letter-spacing: -0.02em;
             white-space: nowrap;
             overflow: hidden;
+            transition: opacity var(--transition-base);
         }
 
-        .sidebar.collapsed .sidebar-brand {
-            display: none;
+        .sidebar-brand-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-blue) 100%);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-md);
+            flex-shrink: 0;
+        }
+
+        .sidebar.collapsed .sidebar-brand span {
+            opacity: 0;
+            width: 0;
         }
 
         .sidebar-toggle {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            color: var(--text-tertiary);
             cursor: pointer;
             padding: var(--space-2);
             border-radius: var(--radius-md);
             transition: all var(--transition-fast);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .sidebar-toggle:hover {
-            background: var(--bg-tertiary);
+            background: var(--bg-card-hover);
             color: var(--text-primary);
+            border-color: var(--border-active);
         }
 
         .sidebar-nav {
             flex: 1;
-            padding: var(--space-4) 0;
+            padding: var(--space-4) var(--space-2);
             overflow-y: auto;
+        }
+
+        .nav-section-title {
+            font-size: var(--text-2xs);
+            font-weight: var(--font-semibold);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: var(--space-3) var(--space-3);
+            margin-bottom: var(--space-1);
+        }
+
+        .sidebar.collapsed .nav-section-title {
+            display: none;
         }
 
         .nav-item {
             display: flex;
             align-items: center;
-            padding: var(--space-3) var(--space-4);
+            padding: var(--space-3) var(--space-3);
             color: var(--text-secondary);
             text-decoration: none;
             transition: all var(--transition-fast);
             gap: var(--space-3);
-            margin: var(--space-1) var(--space-2);
-            border-radius: var(--radius-md);
+            margin: 2px 0;
+            border-radius: var(--radius-lg);
+            font-size: var(--text-sm);
+            font-weight: var(--font-medium);
+            position: relative;
         }
 
         .nav-item:hover {
-            background: var(--bg-tertiary);
+            background-color: var(--bg-tertiary);
             color: var(--text-primary);
         }
 
         .nav-item.active {
-            background: var(--accent-primary);
-            color: white;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(34, 211, 238, 0.1) 100%);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 60%;
+            background: linear-gradient(180deg, var(--accent-cyan) 0%, var(--accent-blue) 100%);
+            border-radius: 0 2px 2px 0;
         }
 
         .nav-item i {
-            width: 20px;
+            width: 18px;
             text-align: center;
-            font-size: var(--text-base);
+            font-size: var(--text-md);
+            flex-shrink: 0;
         }
 
         .nav-item span {
             white-space: nowrap;
             overflow: hidden;
+            transition: opacity var(--transition-base);
         }
 
         .sidebar.collapsed .nav-item span {
-            display: none;
+            opacity: 0;
+            width: 0;
         }
 
         .sidebar.collapsed .nav-item {
@@ -117,35 +181,36 @@
             padding: var(--space-3);
         }
 
-        .sidebar-footer {
-            padding: var(--space-4);
-            border-top: 1px solid var(--border-primary);
+        .sidebar.collapsed .nav-item.active::before {
+            display: none;
         }
 
         .nav-divider {
             height: 1px;
             background: var(--border-primary);
-            margin: var(--space-3) var(--space-4);
+            margin: var(--space-3) var(--space-3);
         }
 
         /* Main Content Area */
         .main-content {
             flex: 1;
-            margin-left: 240px;
-            transition: margin-left var(--transition-normal);
+            margin-left: var(--sidebar-width);
+            transition: margin-left var(--transition-base);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
         .sidebar.collapsed ~ .main-content {
-            margin-left: 70px;
+            margin-left: var(--sidebar-collapsed);
         }
 
+        /* Top Header */
         .top-header {
-            background: #0b0e14;
-            padding: 0.75rem 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: var(--bg-secondary);
+            padding: 0 var(--space-5);
+            height: var(--header-height);
+            border-bottom: 1px solid var(--border-primary);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -154,205 +219,130 @@
             z-index: 50;
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: var(--space-2);
+            font-size: var(--text-lg);
+        }
+
         .breadcrumb {
             display: flex;
-            flex-wrap: wrap;
+            align-items: center;
             padding: 0;
             margin: 0;
-            list-style: none !important;
+            list-style: none;
             background: transparent;
+            gap: var(--space-2);
         }
 
         .breadcrumb-item {
             display: flex;
             align-items: center;
-            list-style: none !important;
+            font-size: var(--text-sm);
         }
 
-        .breadcrumb-item + .breadcrumb-item {
-            padding-left: 0.5rem;
+        .breadcrumb-item a {
+            color: var(--text-tertiary);
+            text-decoration: none;
+            transition: color var(--transition-fast);
         }
 
-        .breadcrumb-item + .breadcrumb-item::before {
-            display: inline-block;
-            padding-right: 0.5rem;
-            color: rgba(255, 255, 255, 0.3);
-            content: ">";
-            font-size: 0.75rem;
+        .breadcrumb-item a:hover {
+            color: var(--text-primary);
         }
 
-        .page-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: white;
-            margin: 0;
+        .breadcrumb-item.active {
+            color: var(--text-primary);
+            font-weight: var(--font-medium);
         }
 
+        .breadcrumb-separator {
+            color: var(--text-muted);
+            font-size: var(--text-xs);
+        }
+
+        /* User Info */
         .user-info {
             display: flex;
             align-items: center;
             gap: var(--space-3);
         }
 
+        .user-details {
+            text-align: right;
+        }
+
         .user-name {
             color: var(--text-primary);
-            font-weight: var(--font-medium);
+            font-weight: var(--font-semibold);
+            font-size: var(--text-sm);
+            line-height: 1.2;
+        }
+
+        .user-role {
+            color: var(--text-tertiary);
+            font-size: var(--text-xs);
+            text-transform: capitalize;
         }
 
         .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--accent-primary);
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-cyan) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-weight: var(--font-semibold);
+            font-weight: var(--font-bold);
+            font-size: var(--text-md);
+            border: 2px solid var(--border-default);
         }
 
+        /* Content Area */
         .content-area {
             flex: 1;
             padding: var(--space-6);
+            max-width: var(--content-max-width);
+            width: 100%;
         }
-
-        /* Essential Layout Helpers */
-        .d-flex { display: flex !important; }
-        .flex-wrap { flex-wrap: wrap !important; }
-        .align-items-center { align-items: center !important; }
-        .justify-content-between { justify-content: space-between !important; }
-        .gap-1 { gap: 0.25rem !important; }
-        .gap-2 { gap: 0.5rem !important; }
-        .gap-3 { gap: 1rem !important; }
-        .gap-4 { gap: 1.5rem !important; }
-        .flex-grow-1 { flex-grow: 1 !important; }
-        .ms-auto { margin-left: auto !important; }
-        .me-3 { margin-right: 1rem !important; }
-        .mb-0 { margin-bottom: 0 !important; }
-        .p-0 { padding: 0 !important; }
-        .p-1 { padding: 0.25rem !important; }
-        .p-2 { padding: 0.5rem !important; }
-        .p-3 { padding: 1rem !important; }
-        .p-4 { padding: 1.5rem !important; }
-        .ps-0 { padding-left: 0 !important; }
-        .pe-0 { padding-right: 0 !important; }
-        .px-3 { padding-left: 1rem !important; padding-right: 1rem !important; }
-        .px-4 { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
-        .py-1 { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
-        .py-2 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
-        .py-3 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
-        .py-4 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
-        .list-unstyled { list-style: none !important; padding-left: 0 !important; }
-        .border { border: 1px solid rgba(255, 255, 255, 0.1) !important; }
-        .rounded-4 { border-radius: 1rem !important; }
-        .text-decoration-none { text-decoration: none !important; }
-        .small { font-size: 0.875rem !important; }
-        .text-white-50 { color: rgba(255, 255, 255, 0.5) !important; }
-        .text-white { color: #ffffff !important; }
-        .fw-bold { font-weight: 700 !important; }
-        .shadow-none { box-shadow: none !important; }
-        .border-0 { border: 0 !important; }
-        .rounded-circle { border-radius: 50% !important; }
-        .rounded-3 { border-radius: 0.5rem !important; }
-        .d-none { display: none !important; }
-        @media (min-width: 768px) { .d-md-block { display: block !important; } .d-md-flex { display: flex !important; } }
-
-        /* Position Helpers */
-        .position-relative { position: relative !important; }
-        .position-absolute { position: absolute !important; }
-        .top-50 { top: 50% !important; }
-        .start-0 { left: 0 !important; }
-        .translate-middle-y { transform: translateY(-50%) !important; }
-        .ms-3 { margin-left: 1rem !important; }
-        .ps-5 { padding-left: 3rem !important; }
-        .py-2 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
-
-        /* Grid & Spacing Helpers */
-        .row { display: flex !important; flex-wrap: wrap !important; margin-right: -15px !important; margin-left: -15px !important; }
-        .g-3 { margin: -0.5rem !important; }
-        .g-3 > * { padding: 0.5rem !important; }
-        .col-auto { flex: 0 0 auto !important; width: auto !important; }
-        .col-12 { flex: 0 0 100% !important; width: 100% !important; }
-        .mt-3 { margin-top: 1rem !important; }
-        .mt-4 { margin-top: 1.5rem !important; }
-        .pt-3 { padding-top: 1rem !important; }
-        .pt-4 { padding-top: 1.5rem !important; }
-        .border-top { border-top: 1px solid rgba(255, 255, 255, 0.1) !important; }
-
-        /* Form Helpers */
-        .form-control, .form-select {
-            display: block !important;
-            width: 100% !important;
-            padding: 0.5rem 0.75rem !important;
-            font-size: 0.875rem !important;
-            font-weight: 400 !important;
-            line-height: 1.5 !important;
-            color: #ffffff !important;
-            background-color: rgba(255, 255, 255, 0.05) !important;
-            background-clip: padding-box !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 0.5rem !important;
-            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
-        }
-        .form-control:focus, .form-select:focus {
-            background-color: rgba(255, 255, 255, 0.08) !important;
-            border-color: rgba(255, 255, 255, 0.25) !important;
-            outline: 0 !important;
-        }
-        .form-select option {
-            background-color: #1e293b !important;
-            color: #ffffff !important;
-        }
-        .bg-dark { background-color: #0b0e14 !important; }
-        .bg-white { background-color: #ffffff; }
-        .bg-opacity-10 { background-color: rgba(255, 255, 255, 0.1) !important; }
-        .bg-opacity-5 { background-color: rgba(255, 255, 255, 0.05) !important; }
-        .border-white { border-color: #ffffff; }
-        .border-opacity-10 { border-color: rgba(255, 255, 255, 0.1) !important; }
-
-        /* Button Helpers */
-        .btn {
-            display: inline-block !important;
-            font-weight: 400 !important;
-            text-align: center !important;
-            vertical-align: middle !important;
-            cursor: pointer !important;
-            user-select: none !important;
-            background-color: transparent !important;
-            border: 1px solid transparent !important;
-            padding: 0.375rem 0.75rem !important;
-            font-size: 0.875rem !important;
-            line-height: 1.5 !important;
-            border-radius: 0.5rem !important;
-            transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
-            text-decoration: none !important;
-        }
-        .btn-link { color: #ffffff !important; background-color: transparent !important; border: 0 !important; }
-        .btn-info { color: #000000 !important; background-color: #22d3ee !important; border-color: #22d3ee !important; }
-        .btn-primary { color: #ffffff !important; background-color: #3b82f6 !important; border-color: #3b82f6 !important; }
-        .btn-white { background: #ffffff !important; color: #000000 !important; border: 0 !important; }
 
         /* Alert Messages */
         .alert {
             padding: var(--space-3) var(--space-4);
-            border-radius: var(--radius-md);
-            margin-bottom: var(--space-4);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-5);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            font-size: var(--text-sm);
+            font-weight: var(--font-medium);
         }
 
         .alert-success {
             background: rgba(34, 197, 94, 0.1);
-            border: 1px solid var(--status-success);
-            color: var(--status-success);
+            border: 1px solid rgba(34, 197, 94, 0.25);
+            color: var(--accent-green);
         }
 
         .alert-error {
             background: rgba(239, 68, 68, 0.1);
-            border: 1px solid var(--status-error);
-            color: var(--status-error);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: var(--accent-red);
         }
 
         /* Responsive */
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
             .sidebar {
                 transform: translateX(-100%);
             }
@@ -364,6 +354,33 @@
             .main-content {
                 margin-left: 0;
             }
+
+            .mobile-toggle {
+                display: block;
+            }
+
+            .content-area {
+                padding: var(--space-4);
+            }
+
+            .user-details {
+                display: none;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .content-area {
+                padding: var(--space-3);
+            }
+
+            .top-header {
+                padding: 0 var(--space-3);
+            }
+
+            .breadcrumb-item a,
+            .breadcrumb-item.active {
+                font-size: var(--text-xs);
+            }
         }
     </style>
 </head>
@@ -372,17 +389,26 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <span class="sidebar-brand">Thirdynal</span>
+                <div class="sidebar-brand">
+                    <span class="sidebar-brand-icon">
+                        <i class="fas fa-boxes-stacked"></i>
+                    </span>
+                    <span>Thirdynal</span>
+                </div>
                 <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
                     <i class="fas fa-chevron-left"></i>
                 </button>
             </div>
 
             <nav class="sidebar-nav">
+                <div class="nav-section-title">Main</div>
+                
+                @if(auth()->user()->canAccess('dashboard'))
                 <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    <i class="fas fa-th-large"></i>
+                    <i class="fas fa-chart-pie"></i>
                     <span>Dashboard</span>
                 </a>
+                @endif
 
                 @if(auth()->user()->canAccess('scanner'))
                 <a href="{{ route('scanner') }}" class="nav-item {{ request()->routeIs('scanner') ? 'active' : '' }}">
@@ -393,27 +419,30 @@
 
                 @if(auth()->user()->canAccess('pending'))
                 <a href="{{ route('pending') }}" class="nav-item {{ request()->routeIs('pending') ? 'active' : '' }}">
-                    <i class="fas fa-clock"></i>
-                    <span>Pending Section</span>
+                    <i class="fas fa-hourglass-half"></i>
+                    <span>Pending</span>
                 </a>
                 @endif
 
                 @if(auth()->user()->canAccess('upload'))
                 <a href="{{ route('upload') }}" class="nav-item {{ request()->routeIs('upload*') ? 'active' : '' }}">
-                    <i class="fas fa-upload"></i>
+                    <i class="fas fa-cloud-arrow-up"></i>
                     <span>Upload</span>
                 </a>
                 @endif
 
                 @if(auth()->user()->canAccess('accounts'))
                 <a href="{{ route('waybills') }}" class="nav-item {{ request()->routeIs('waybills') ? 'active' : '' }}">
-                    <i class="fas fa-list"></i>
+                    <i class="fas fa-file-invoice"></i>
                     <span>Waybills</span>
                 </a>
                 @endif
 
+                <div class="nav-divider"></div>
+                <div class="nav-section-title">Sales</div>
+
                 @if(auth()->user()->canAccess('leads_view'))
-                <a href="{{ route('leads.index') }}" class="nav-item {{ request()->routeIs('leads.index') ? 'active' : '' }}">
+                <a href="{{ route('leads.index') }}" class="nav-item {{ request()->routeIs('leads.index') || request()->routeIs('leads.importForm') ? 'active' : '' }}">
                     <i class="fas fa-headset"></i>
                     <span>Leads</span>
                 </a>
@@ -427,10 +456,11 @@
                 @endif
 
                 <div class="nav-divider"></div>
+                <div class="nav-section-title">System</div>
 
                 @if(auth()->user()->canAccess('settings'))
                 <a href="{{ route('settings') }}" class="nav-item {{ request()->routeIs('settings*') ? 'active' : '' }}">
-                    <i class="fas fa-cog"></i>
+                    <i class="fas fa-gear"></i>
                     <span>Settings</span>
                 </a>
                 @endif
@@ -438,7 +468,7 @@
                 <form method="POST" action="{{ route('logout') }}" id="logoutForm">
                     @csrf
                     <a href="#" class="nav-item" onclick="event.preventDefault(); document.getElementById('logoutForm').submit();">
-                        <i class="fas fa-sign-out-alt"></i>
+                        <i class="fas fa-right-from-bracket"></i>
                         <span>Sign Out</span>
                     </a>
                 </form>
@@ -448,24 +478,31 @@
         <!-- Main Content -->
         <div class="main-content">
             <header class="top-header">
-                <div class="d-flex align-items-center">
-                    <button class="btn btn-link text-white-50 p-0 me-3 shadow-none border-0" id="sidebarToggleGlobal">
-                        <i class="fas fa-bars-staggered"></i>
+                <div class="header-left">
+                    <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle menu">
+                        <i class="fas fa-bars"></i>
                     </button>
                     <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb mb-0">
-                            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-white-50 text-decoration-none small">Dashboard</a></li>
-                            <li class="breadcrumb-item active text-white small" aria-current="page">@yield('page-title', 'Leads')</li>
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="{{ route('dashboard') }}">
+                                    <i class="fas fa-home"></i>
+                                </a>
+                            </li>
+                            <li class="breadcrumb-separator">
+                                <i class="fas fa-chevron-right"></i>
+                            </li>
+                            <li class="breadcrumb-item active">@yield('page-title', 'Dashboard')</li>
                         </ol>
                     </nav>
                 </div>
                 
-                <div class="user-info d-flex align-items-center">
-                    <div class="text-end me-3 d-none d-md-block">
-                        <div class="user-name text-white fw-bold small mb-0">{{ auth()->user()->name }}</div>
-                        <div class="user-email text-white-50 small" style="font-size: 0.75rem;">{{ auth()->user()->email ?? 'admin@thirdynal.com' }}</div>
+                <div class="user-info">
+                    <div class="user-details">
+                        <div class="user-name">{{ auth()->user()->name }}</div>
+                        <div class="user-role">{{ auth()->user()->role }}</div>
                     </div>
-                    <div class="user-avatar bg-info text-dark fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; border: 2px solid rgba(255,255,255,0.1);">
+                    <div class="user-avatar">
                         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                     </div>
                 </div>
@@ -473,11 +510,17 @@
 
             <main class="content-area">
                 @if(session('success'))
-                    <div class="alert alert-success">{{ session('success') }}</div>
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        {{ session('success') }}
+                    </div>
                 @endif
 
                 @if(session('error'))
-                    <div class="alert alert-error">{{ session('error') }}</div>
+                    <div class="alert alert-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ session('error') }}
+                    </div>
                 @endif
 
                 @yield('content')
@@ -485,50 +528,65 @@
         </div>
     </div>
 
-    <!-- Notification Bell (Fixed Position) -->
+    <!-- Notification Bell -->
     <div id="notification-bell">
-        <i class="fas fa-bell" style="font-size: 1.5rem;"></i>
+        <i class="fas fa-bell"></i>
         <span id="notification-count">0</span>
     </div>
 
-    <!-- Notification List container (Hidden by default) -->
+    <!-- Notification List -->
     <div id="notification-list">
-        <div class="notification-header">Notifications</div>
-        <div id="notification-items">
-            <!-- Items injected by JS -->
+        <div class="notification-header">
+            <i class="fas fa-bell" style="margin-right: 8px;"></i>
+            Notifications
         </div>
+        <div id="notification-items"></div>
     </div>
 
     <script>
-        // Sidebar toggle functionality
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebarToggle');
-            const sidebarToggleGlobal = document.getElementById('sidebarToggleGlobal');
+            const mobileToggle = document.getElementById('mobileToggle');
             const toggleIcon = sidebarToggle ? sidebarToggle.querySelector('i') : null;
-            const globalToggleIcon = sidebarToggleGlobal ? sidebarToggleGlobal.querySelector('i') : null;
 
             // Load saved state
             const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (isCollapsed) {
+            if (isCollapsed && window.innerWidth > 1024) {
                 sidebar.classList.add('collapsed');
-                if(toggleIcon) toggleIcon.classList.replace('fa-chevron-left', 'fa-chevron-right');
+                if (toggleIcon) toggleIcon.classList.replace('fa-chevron-left', 'fa-chevron-right');
             }
 
-            const toggleLogic = () => {
-                sidebar.classList.toggle('collapsed');
-                const nowCollapsed = sidebar.classList.contains('collapsed');
-                localStorage.setItem('sidebarCollapsed', nowCollapsed);
-                
-                if (nowCollapsed) {
-                   if(toggleIcon) toggleIcon.classList.replace('fa-chevron-left', 'fa-chevron-right');
-                } else {
-                   if(toggleIcon) toggleIcon.classList.replace('fa-chevron-right', 'fa-chevron-left');
-                }
-            };
+            // Toggle sidebar (desktop)
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                    const nowCollapsed = sidebar.classList.contains('collapsed');
+                    localStorage.setItem('sidebarCollapsed', nowCollapsed);
+                    
+                    if (nowCollapsed) {
+                        toggleIcon.classList.replace('fa-chevron-left', 'fa-chevron-right');
+                    } else {
+                        toggleIcon.classList.replace('fa-chevron-right', 'fa-chevron-left');
+                    }
+                });
+            }
 
-            sidebarToggle.addEventListener('click', toggleLogic);
-            if(sidebarToggleGlobal) sidebarToggleGlobal.addEventListener('click', toggleLogic);
+            // Toggle sidebar (mobile)
+            if (mobileToggle) {
+                mobileToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+
+            // Close mobile sidebar on outside click
+            document.addEventListener('click', function(e) {
+                if (window.innerWidth <= 1024) {
+                    if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
+                        sidebar.classList.remove('mobile-open');
+                    }
+                }
+            });
         });
 
         // Notification functionality
@@ -538,8 +596,15 @@
             const countBadge = document.getElementById('notification-count');
             const itemsContainer = document.getElementById('notification-items');
 
-            bell.addEventListener('click', () => {
+            bell.addEventListener('click', function(e) {
+                e.stopPropagation();
                 list.style.display = list.style.display === 'none' ? 'block' : 'none';
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!list.contains(e.target) && !bell.contains(e.target)) {
+                    list.style.display = 'none';
+                }
             });
 
             function checkNotifications() {
@@ -547,7 +612,7 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.unread_count > 0) {
-                            countBadge.style.display = 'block';
+                            countBadge.style.display = 'flex';
                             countBadge.textContent = data.unread_count;
                         } else {
                             countBadge.style.display = 'none';
@@ -555,20 +620,20 @@
 
                         itemsContainer.innerHTML = '';
                         if (data.notifications.length === 0) {
-                            itemsContainer.innerHTML = '<div style="padding: 10px; color: #9ca3af; text-align: center;">No notifications</div>';
+                            itemsContainer.innerHTML = '<div style="padding: 16px; color: var(--text-tertiary); text-align: center; font-size: 13px;">No notifications</div>';
                         } else {
                             data.notifications.forEach(notif => {
                                 const item = document.createElement('div');
-                                item.style.padding = '10px';
-                                item.style.borderBottom = '1px solid #374151';
-                                item.style.fontSize = '0.9rem';
-                                item.style.cursor = 'pointer';
-                                item.style.background = notif.read_at ? 'transparent' : 'rgba(59, 130, 246, 0.1)';
+                                item.style.cssText = 'padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); font-size: 13px; cursor: pointer; transition: background 0.15s;';
+                                item.style.background = notif.read_at ? 'transparent' : 'rgba(59, 130, 246, 0.05)';
 
                                 item.innerHTML = `
-                                    <div style="margin-bottom: 5px;">${notif.data.message}</div>
-                                    <small style="color: #9ca3af;">${new Date(notif.created_at).toLocaleString()}</small>
+                                    <div style="margin-bottom: 4px; color: var(--text-primary);">${notif.data.message}</div>
+                                    <small style="color: var(--text-tertiary);">${new Date(notif.created_at).toLocaleString()}</small>
                                 `;
+
+                                item.addEventListener('mouseenter', () => item.style.background = 'var(--bg-card-hover)');
+                                item.addEventListener('mouseleave', () => item.style.background = notif.read_at ? 'transparent' : 'rgba(59, 130, 246, 0.05)');
 
                                 item.addEventListener('click', () => {
                                     fetch(`/notifications/${notif.id}/read`, {
@@ -599,4 +664,3 @@
     @stack('scripts')
 </body>
 </html>
-

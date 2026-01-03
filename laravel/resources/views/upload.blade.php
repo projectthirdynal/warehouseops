@@ -1,19 +1,20 @@
 @extends('layouts.app')
 
 @section('title', 'Upload - Waybill System')
+@section('page-title', 'Upload')
 
 @section('content')
-    <!-- Page Header with Icon -->
+    <!-- Page Header -->
     <div class="section-header">
         <h2>
-            <svg class="section-header-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="section-header-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" y1="3" x2="12" y2="15"></line>
             </svg>
             Upload Waybills
         </h2>
-        <p>Upload CSV or Excel files containing waybill data</p>
+        <p>Upload Excel or CSV files containing waybill data</p>
     </div>
 
     <div class="upload-container">
@@ -23,29 +24,21 @@
             <form id="uploadForm" enctype="multipart/form-data">
                 @csrf
                 <!-- Drop Zone -->
-                <div class="file-upload-area" id="dropZone" role="button" tabindex="0" aria-label="File upload area - click or drag to upload">
+                <div class="file-upload-area" id="dropZone" role="button" tabindex="0" aria-label="File upload area">
                     <input type="file" id="fileInput" name="waybill_file" accept=".xlsx,.xls,.csv" hidden>
                     <div class="upload-icon">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
+                        <i class="fas fa-cloud-arrow-up"></i>
                     </div>
-                    <p class="upload-text">Drop your file here or click to browse</p>
-                    <p class="upload-subtext">Supported formats: CSV, XLSX, XLS</p>
+                    <p class="upload-text">Drag & drop your file here</p>
+                    <p class="upload-subtext">or click to browse • .xlsx, .xls, .csv</p>
                     <p class="file-name" id="fileName"></p>
                 </div>
 
-                <!-- Blue Info Box - File Format Requirements -->
-                <div class="info-box info-box-blue">
+                <!-- File Format Info -->
+                <div class="info-box">
                     <div class="info-box-header">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="16" x2="12" y2="12"></line>
-                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                        </svg>
-                        <h3>File Format Requirements</h3>
+                        <i class="fas fa-circle-info"></i>
+                        <h3>File Requirements</h3>
                     </div>
                     <div class="info-box-content">
                         <div class="info-section">
@@ -53,7 +46,6 @@
                             <ul>
                                 <li>Waybill Number</li>
                                 <li>Sender Name</li>
-                                <li>Sender Phone</li>
                                 <li>Receiver Name</li>
                                 <li>Receiver Phone</li>
                                 <li>Destination</li>
@@ -62,38 +54,34 @@
                         <div class="info-section">
                             <h4>Optional Columns</h4>
                             <ul>
-                                <li>Sender Address</li>
                                 <li>Receiver Address</li>
                                 <li>Weight (kg)</li>
-                                <li>Quantity</li>
-                                <li>Service Type</li>
                                 <li>COD Amount</li>
                                 <li>Remarks</li>
+                                <li>Service Type</li>
                             </ul>
                         </div>
                         <div class="info-section">
-                            <h4>File Constraints</h4>
+                            <h4>Constraints</h4>
                             <ul>
-                                <li>File formats: CSV, XLSX, XLS</li>
-                                <li>First row must contain column headers</li>
-                                <li>Maximum file size: <strong>100 MB</strong></li>
+                                <li>Max file size: <strong>100 MB</strong></li>
+                                <li>First row = headers</li>
+                                <li>Large files processed async</li>
                             </ul>
                         </div>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100" id="uploadBtn" disabled>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
+                <button type="submit" class="btn btn-primary btn-lg w-100" id="uploadBtn" disabled>
+                    <i class="fas fa-upload"></i>
                     Upload Waybills
                 </button>
 
                 <div class="progress-bar" id="progressBar" style="display:none;">
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
+                
+                <div id="progressStatus" class="progress-status" style="display:none;"></div>
             </form>
         </div>
     </div>
@@ -102,26 +90,27 @@
 @push('styles')
 <style>
     .info-box {
-        border-radius: var(--radius-lg);
+        background: rgba(59, 130, 246, 0.06);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: var(--radius-xl);
         padding: var(--space-5);
         margin-bottom: var(--space-5);
-    }
-
-    .info-box-blue {
-        background-color: rgba(59, 130, 246, 0.1);
-        border: 1px solid var(--accent-blue);
     }
 
     .info-box-header {
         display: flex;
         align-items: center;
-        gap: var(--space-3);
+        gap: var(--space-2);
         margin-bottom: var(--space-4);
         color: var(--accent-blue);
     }
 
+    .info-box-header i {
+        font-size: var(--text-lg);
+    }
+
     .info-box-header h3 {
-        font-size: var(--text-base);
+        font-size: var(--text-sm);
         font-weight: var(--font-semibold);
         margin: 0;
         color: var(--accent-blue);
@@ -136,14 +125,17 @@
     @media (max-width: 768px) {
         .info-box-content {
             grid-template-columns: 1fr;
+            gap: var(--space-4);
         }
     }
 
     .info-section h4 {
-        font-size: var(--text-sm);
+        font-size: var(--text-xs);
         font-weight: var(--font-semibold);
         color: var(--text-primary);
         margin-bottom: var(--space-2);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
     .info-section ul {
@@ -155,8 +147,8 @@
     .info-section li {
         font-size: var(--text-sm);
         color: var(--text-secondary);
-        padding: var(--space-1) 0;
-        padding-left: var(--space-4);
+        padding: 4px 0;
+        padding-left: var(--space-3);
         position: relative;
     }
 
@@ -166,21 +158,28 @@
         left: 0;
         top: 50%;
         transform: translateY(-50%);
-        width: 6px;
-        height: 6px;
+        width: 5px;
+        height: 5px;
         background-color: var(--accent-blue);
         border-radius: 50%;
+        opacity: 0.6;
     }
 
     .info-section li strong {
         color: var(--text-primary);
+    }
+    
+    .progress-status {
+        text-align: center;
+        margin-top: var(--space-3);
+        font-size: var(--text-sm);
+        color: var(--text-secondary);
     }
 </style>
 @endpush
 
 @push('scripts')
 <script>
-    // Pass routes to JS
     const uploadRoute = "{{ route('upload.store') }}";
     const statusRouteBase = "{{ url('/upload') }}";
 
@@ -193,6 +192,7 @@
         const uploadResult = document.getElementById('uploadResult');
         const progressBar = document.getElementById('progressBar');
         const progressFill = document.getElementById('progressFill');
+        const progressStatus = document.getElementById('progressStatus');
 
         let pollInterval = null;
 
@@ -238,7 +238,6 @@
                 fileName.style.color = 'var(--accent-primary)';
                 uploadBtn.disabled = false;
 
-                // Check file size (100MB limit for async processing)
                 if (file.size > 100 * 1024 * 1024) {
                     showResult('error', 'File size exceeds 100 MB limit');
                     uploadBtn.disabled = true;
@@ -249,7 +248,6 @@
             }
         }
 
-        // Form submission
         uploadForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -261,18 +259,19 @@
             const formData = new FormData(uploadForm);
             uploadBtn.disabled = true;
             progressBar.style.display = 'block';
+            progressStatus.style.display = 'block';
             progressFill.style.width = '5%';
+            progressStatus.textContent = 'Uploading file...';
             showResult('info', 'Uploading file...');
 
             try {
                 const xhr = new XMLHttpRequest();
 
-                // Track upload progress
                 xhr.upload.addEventListener('progress', (e) => {
                     if (e.lengthComputable) {
-                        // Upload is 0-30% of total progress
                         const percent = Math.round((e.loaded / e.total) * 30);
                         progressFill.style.width = percent + '%';
+                        progressStatus.textContent = `Uploading... ${percent}%`;
                     }
                 });
 
@@ -281,51 +280,48 @@
                         try {
                             const response = JSON.parse(xhr.responseText);
                             if (response.success && response.async && response.upload_id) {
-                            // Start polling for processing progress
-                            showResult('info', 'Processing file in background...');
-                            progressFill.style.width = '30%';
-                            pollUploadStatus(response.upload_id);
-                        } else if (response.success) {
-                            // Synchronous completion (fallback)
+                                showResult('info', 'Processing file in background...');
+                                progressFill.style.width = '30%';
+                                progressStatus.textContent = 'Processing...';
+                                pollUploadStatus(response.upload_id);
+                            } else if (response.success) {
+                                progressBar.style.display = 'none';
+                                progressStatus.style.display = 'none';
+                                showResult('success', response.message || 'Upload successful!');
+                                resetForm();
+                            } else {
+                                progressBar.style.display = 'none';
+                                progressStatus.style.display = 'none';
+                                uploadBtn.disabled = false;
+                                showResult('error', response.message || 'Upload failed');
+                            }
+                        } catch (e) {
                             progressBar.style.display = 'none';
-                            showResult('success', response.message || 'Upload successful!');
-                            resetForm();
-                        } else {
-                            progressBar.style.display = 'none';
+                            progressStatus.style.display = 'none';
                             uploadBtn.disabled = false;
-                            showResult('error', response.message || 'Upload failed');
+                            showResult('error', 'Server returned an invalid response.');
                         }
-                    } catch (e) {
-                        progressBar.style.display = 'none';
-                        uploadBtn.disabled = false;
-                        console.error('JSON Parse Error:', e);
-                        console.log('Server Response:', xhr.responseText);
-                        showResult('error', 'Server returned an invalid response. Check console for details.');
-                    }
                     } else {
-                        // Try to parse error message from JSON response
                         try {
                             const errorResponse = JSON.parse(xhr.responseText);
-                            let errorMsg = errorResponse.message || errorResponse.error || 'Upload failed.';
-                            
-                            // Check for validation errors
+                            let errorMsg = errorResponse.message || 'Upload failed.';
                             if (errorResponse.errors) {
-                                const details = Object.values(errorResponse.errors).flat().join('<br>');
-                                errorMsg += `<br><small>${details}</small>`;
+                                const details = Object.values(errorResponse.errors).flat().join(', ');
+                                errorMsg += ` (${details})`;
                             }
-                            
-                            showResult('error', `❌ ${errorMsg}`);
+                            showResult('error', errorMsg);
                         } catch (e) {
-                            showResult('error', `❌ Upload failed: ${xhr.statusText}`);
+                            showResult('error', `Upload failed: ${xhr.statusText}`);
                         }
-                        
                         progressBar.style.display = 'none';
+                        progressStatus.style.display = 'none';
                         uploadBtn.disabled = false;
                     }
                 });
 
                 xhr.addEventListener('error', () => {
                     progressBar.style.display = 'none';
+                    progressStatus.style.display = 'none';
                     uploadBtn.disabled = false;
                     showResult('error', 'Network error. Please try again.');
                 });
@@ -337,13 +333,13 @@
 
             } catch (error) {
                 progressBar.style.display = 'none';
+                progressStatus.style.display = 'none';
                 uploadBtn.disabled = false;
                 showResult('error', 'An error occurred. Please try again.');
             }
         });
 
         function pollUploadStatus(uploadId) {
-            // Clear any existing poll
             if (pollInterval) clearInterval(pollInterval);
 
             pollInterval = setInterval(async () => {
@@ -352,17 +348,16 @@
                     const data = await response.json();
 
                     if (data.success) {
-                        // Update progress bar (processing is 30-100%)
                         const processingProgress = 30 + (data.progress * 0.7);
                         progressFill.style.width = processingProgress + '%';
-                        showResult('info', data.message);
+                        progressStatus.textContent = data.message;
 
                         if (data.status === 'completed') {
                             clearInterval(pollInterval);
                             pollInterval = null;
                             progressFill.style.width = '100%';
+                            progressStatus.textContent = 'Complete!';
                             showResult('success', data.message);
-                            showResult('success', data.message + '<br>Redirecting to scanner...');
                             setTimeout(() => {
                                 window.location.href = "{{ route('scanner') }}";
                             }, 1500);
@@ -370,6 +365,7 @@
                             clearInterval(pollInterval);
                             pollInterval = null;
                             progressBar.style.display = 'none';
+                            progressStatus.style.display = 'none';
                             uploadBtn.disabled = false;
                             showResult('error', data.message);
                         }
@@ -377,7 +373,7 @@
                 } catch (error) {
                     console.error('Poll error:', error);
                 }
-            }, 2000); // Poll every 2 seconds
+            }, 2000);
         }
 
         function resetForm() {
@@ -400,4 +396,3 @@
     });
 </script>
 @endpush
-

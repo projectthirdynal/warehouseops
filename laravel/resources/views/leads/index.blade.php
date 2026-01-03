@@ -113,6 +113,75 @@
             </div>
         </div>
 
+        {{-- Distribute Collapse Section --}}
+        @if(Auth::user()->canAccess('leads_manage'))
+        <div id="distributeCollapse" class="d-none mb-4">
+            <div class="filter-box bg-opacity-5 border border-info border-opacity-25 rounded-4 p-4">
+                <form action="{{ route('leads.distribute') }}" method="POST" id="distributeForm">
+                    @csrf
+                    <div class="row align-items-end g-3">
+                        <div class="col-md-3">
+                            <label class="text-white-50 small mb-2">
+                                <i class="fas fa-user me-1"></i> Assign to Agent <span class="text-danger">*</span>
+                            </label>
+                            <select name="agent_id" class="form-select bg-dark border-info border-opacity-25 text-white rounded-3" required>
+                                <option value="">-- Select Agent --</option>
+                                @foreach($agents as $agent)
+                                    <option value="{{ $agent->id }}">{{ $agent->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="text-white-50 small mb-2">
+                                <i class="fas fa-hashtag me-1"></i> Count <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" name="count" class="form-control bg-dark border-info border-opacity-25 text-white rounded-3" min="1" value="50" required placeholder="# of leads">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="text-white-50 small mb-2">
+                                <i class="fas fa-filter me-1"></i> Lead Type
+                            </label>
+                            <select name="status" class="form-select bg-dark border-info border-opacity-25 text-white rounded-3">
+                                <option value="NEW">Fresh (NEW)</option>
+                                <option value="NO_ANSWER">No Answer</option>
+                                <option value="REORDER">Reorder</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="text-white-50 small mb-2">
+                                <i class="fas fa-box me-1"></i> Product
+                            </label>
+                            <select name="previous_item" class="form-select bg-dark border-info border-opacity-25 text-white rounded-3">
+                                <option value="">All Products</option>
+                                @foreach($productOptions as $product)
+                                    <option value="{{ $product }}">{{ $product }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <label class="text-white-50 small mb-2 d-block">
+                                <i class="fas fa-recycle me-1"></i> Recycle
+                            </label>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="recycle" value="1" class="form-check-input bg-dark border-info" id="recycleSwitch">
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <button type="submit" class="btn btn-info text-dark fw-bold px-4 py-2 rounded-3 shadow-sm w-100">
+                                <i class="fas fa-paper-plane me-2"></i> Distribute Now
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-white-50 small">
+                        <i class="fas fa-info-circle me-1 text-info"></i>
+                        Distribution will assign the specified number of unassigned leads (matching criteria) to the selected agent.
+                        <span class="text-warning"><strong>Recycle:</strong> Re-distribute leads that were assigned 12+ hours ago.</span>
+                    </div>
+                </form>
+            </div>
+        </div>
+        @endif
+
         {{-- Filter Box --}}
         <div class="filter-box bg-opacity-5 border border-white border-opacity-10 rounded-4 p-4">
             <form action="{{ route('leads.index') }}" method="GET" id="filterForm">

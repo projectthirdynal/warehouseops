@@ -20,7 +20,7 @@ class User extends Authenticatable
         self::ROLE_SUPERADMIN => ['dashboard', 'scanner', 'pending', 'upload', 'accounts', 'settings', 'users', 'leads_view', 'leads_manage', 'leads_create'],
         self::ROLE_ADMIN => ['dashboard', 'scanner', 'pending', 'upload', 'accounts', 'settings', 'leads_view', 'leads_manage', 'users', 'leads_create'],
         self::ROLE_OPERATOR => ['dashboard', 'scanner', 'pending', 'upload', 'accounts'],
-        self::ROLE_AGENT => ['dashboard', 'accounts', 'leads_view'],
+        self::ROLE_AGENT => ['accounts', 'leads_view'],
     ];
 
     protected $fillable = [

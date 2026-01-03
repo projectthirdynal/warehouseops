@@ -31,8 +31,13 @@ class CheckRole
                 ], 403);
             }
 
-            // Otherwise redirect with error message
-            return redirect()->route('dashboard')->with('error', 'You do not have permission to access this feature.');
+            // If the user has access to leads, redirect there
+            if ($user->canAccess('leads_view')) {
+                return redirect()->route('leads.index')->with('error', 'You do not have permission to access that section.');
+            }
+
+            // Otherwise redirect to login or show error
+            return redirect()->route('login')->with('error', 'You do not have permission to access this system.');
         }
 
         return $next($request);
