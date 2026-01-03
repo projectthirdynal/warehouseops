@@ -13,3 +13,4 @@ Schedule::command('waybills:auto-cancel-pending')->daily();
 Schedule::command('leads:generate-reorders')->daily();
 Schedule::command('leads:score')->daily();
 Schedule::command('leads:analyze-agents')->dailyAt('01:00');
+Schedule::command('leads:guardian-audit')->dailyAt('02:00');

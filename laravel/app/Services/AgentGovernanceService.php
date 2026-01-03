@@ -37,9 +37,18 @@ class AgentGovernanceService
         $totalTime = 0;
         $countTime = 0;
         foreach ($cycles as $cycle) {
-            $firstCall = $cycle->calls()->orderBy('created_at')->first();
-            if ($firstCall) {
-                $timeDiff = $cycle->created_at->diffInSeconds($firstCall->created_at);
+            $firstCallTime = null;
+            if (!empty($cycle->notes) && is_array($cycle->notes)) {
+                foreach ($cycle->notes as $note) {
+                    if (isset($note['type']) && $note['type'] === 'call') {
+                        $firstCallTime = \Carbon\Carbon::parse($note['timestamp']);
+                        break;
+                    }
+                }
+            }
+
+            if ($firstCallTime) {
+                $timeDiff = $cycle->created_at->diffInSeconds($firstCallTime);
                 $totalTime += $timeDiff;
                 $countTime++;
             }
@@ -47,14 +56,14 @@ class AgentGovernanceService
         $profile->avg_time_to_first_call = $countTime > 0 ? (int)($totalTime / $countTime) : null;
 
         // 2. Calculate Recycle Abuse Rate
-        // Definition: Cycles closed as NEW (recycled) within 5 mins with NO calls
+        // Definition: Cycles closed as REJECT within 5 mins with NO calls
         $abuseCount = 0;
         $recycleCount = 0;
         foreach ($cycles as $cycle) {
             if ($cycle->status === LeadCycle::STATUS_CLOSED_REJECT) {
                 $recycleCount++;
                 $duration = $cycle->created_at->diffInMinutes($cycle->closed_at);
-                if ($duration < self::FAST_RECYCLE_MINUTES && $cycle->calls->isEmpty()) {
+                if ($duration < self::FAST_RECYCLE_MINUTES && $cycle->call_attempts === 0) {
                     $abuseCount++;
                 }
             }

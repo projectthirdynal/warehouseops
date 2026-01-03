@@ -89,6 +89,11 @@ class Lead extends Model
         return $this->hasMany(LeadCycle::class)->orderBy('cycle_number', 'desc');
     }
 
+    public function leadCycles(): HasMany
+    {
+        return $this->cycles();
+    }
+
     /**
      * Get the currently active cycle.
      */

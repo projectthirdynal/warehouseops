@@ -14,11 +14,16 @@ class LeadService
 {
     protected LeadCycleService $cycleService;
     protected LeadStateMachine $stateMachine;
+    protected LeadCycleLogicGuardian $guardian;
 
-    public function __construct(LeadCycleService $cycleService, LeadStateMachine $stateMachine)
-    {
+    public function __construct(
+        LeadCycleService $cycleService, 
+        LeadStateMachine $stateMachine,
+        LeadCycleLogicGuardian $guardian
+    ) {
         $this->cycleService = $cycleService;
         $this->stateMachine = $stateMachine;
+        $this->guardian = $guardian;
     }
 
     /**
@@ -43,6 +48,9 @@ class LeadService
         if ($lead->isLocked() && $actor->role === 'agent') {
             throw new \Exception("Agents cannot update a locked lead (SALE/DELIVERED).");
         }
+
+        // Logic Guardian Audit (Pre-Transition)
+        $this->guardian->auditTransition($lead, $newStatus, $actor);
 
         // Enforce state transitions
         $this->stateMachine->validateTransition($lead, $newStatus, $actor);
