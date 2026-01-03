@@ -16,6 +16,7 @@ class Lead extends Model
     const STATUS_SALE = 'SALE';
     const STATUS_REORDER = 'REORDER';
     const STATUS_DELIVERED = 'DELIVERED';
+    const STATUS_RETURNED = 'RETURNED';
     const STATUS_CANCELLED = 'CANCELLED';
 
     protected $fillable = [
