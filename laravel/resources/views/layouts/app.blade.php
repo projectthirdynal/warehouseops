@@ -665,8 +665,15 @@
     
     {{-- Softphone Widget (Global) --}}
     @auth
+    @php
+        $sipAccount = auth()->user()->sipAccount;
+        $sipConfig = $sipAccount ? $sipAccount->toSipConfig() : null;
+        // Ensure WS server matches current host for hybrid safety if not set? 
+        // No, the seeder set it to 192.168.120.33. That's fine.
+    @endphp
     <script>
         window.laravelUserId = {{ auth()->id() }};
+        window.sipConfig = @json($sipConfig);
     </script>
     <script src="{{ asset('js/softphone.js') }}?v={{ time() }}"></script>
     @endauth

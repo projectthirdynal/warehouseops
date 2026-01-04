@@ -7,21 +7,23 @@
 (function () {
     'use strict';
 
-    // Get User ID from meta tag or derive from random (temporary)
-    // Ideally we pass this from Blade
-    const userId = window.laravelUserId || Math.floor(Math.random() * 43) + 1;
-    // Map User ID to 1001-1043 range
-    const sipExtension = 1000 + ((userId % 43) || 1);
-    const sipUser = sipExtension.toString();
-
     // Configuration
-    const SIP_CONFIG = {
-        uri: 'sip:' + sipUser + '@' + window.location.hostname,
-        wsServers: ['ws://' + window.location.hostname + ':8088/ws'],
-        authorizationUser: sipUser,
-        password: 'webrtc_secret',
-        displayName: 'Agent ' + sipUser
-    };
+    let SIP_CONFIG = null;
+    let sipUser = 'Unknown';
+
+    if (window.sipConfig) {
+        SIP_CONFIG = window.sipConfig;
+
+        // Dynamic Hostname Fix for Hybrid env
+        const protocol = (window.location.protocol === 'https:') ? 'wss' : 'ws';
+        const port = (protocol === 'wss') ? '8089' : '8088';
+        SIP_CONFIG.wsServers = [`${protocol}://${window.location.hostname}:${port}/ws`];
+        SIP_CONFIG.uri = `sip:${SIP_CONFIG.authorizationUsername}@${window.location.hostname}`;
+
+        sipUser = SIP_CONFIG.authorizationUsername;
+    } else {
+        console.warn('Softphone: No SIP Config found for this user.');
+    }
 
     let mode = 'manual'; // 'webrtc' or 'manual'
     let userAgent = null;
@@ -31,12 +33,19 @@
     let callTimer = null;
     let callStartTime = null;
 
+    // Initialize UI immediately
+    initWidget();
+
     // Load SIP.js
     if (typeof SIP === 'undefined') {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/sip.js@0.21.2/dist/sip.min.js';
         script.onload = checkCapability;
-        script.onerror = () => initManual(); // Fallback if CDN fails
+        script.onerror = () => {
+            console.error('SIP Library Failed to Load');
+            updateStatus('Library Error', 'manual');
+            mode = 'manual';
+        };
         document.head.appendChild(script);
     } else {
         checkCapability();
@@ -49,21 +58,29 @@
         if (isSecure && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             console.log('Softphone: WebRTC supported. Attempting connection...');
             mode = 'webrtc';
-            initWidget();
+            updateStatus('Connecting...', false);
             setupSIP();
         } else {
             console.warn('Softphone: WebRTC not supported (Need HTTPS). Falling back to Manual Mode.');
             mode = 'manual';
-            initWidget();
+            updateStatus('Manual Mode', 'manual');
+
+            // Show hint immediately in manual mode
+            if (document.getElementById('sp-info-text')) {
+                document.getElementById('sp-info-text').innerText = 'WebRTC Disabled (HTTPS required). Using Manual Logging.';
+                document.getElementById('sp-manual-hint').style.display = 'block';
+                document.getElementById('sp-keypad').style.display = 'none';
+            }
         }
     }
+}
 
     function initWidget() {
-        if (document.getElementById('softphone-widget')) return;
+    if (document.getElementById('softphone-widget')) return;
 
-        const widget = document.createElement('div');
-        widget.id = 'softphone-widget';
-        widget.innerHTML = `
+    const widget = document.createElement('div');
+    widget.id = 'softphone-widget';
+    widget.innerHTML = `
             <style>
                 #softphone-widget {
                     position: fixed;
@@ -187,161 +204,161 @@
             
             <audio id="sp-remote-audio" autoplay></audio>
         `;
-        document.body.appendChild(widget);
+    document.body.appendChild(widget);
 
-        // Events
-        document.getElementById('sp-fab').onclick = () => document.getElementById('sp-panel').classList.toggle('open');
-        document.getElementById('sp-close').onclick = () => document.getElementById('sp-panel').classList.remove('open');
-        document.getElementById('sp-btn-dial').onclick = () => startCall(document.getElementById('sp-number-input').value);
-        document.getElementById('sp-btn-hangup').onclick = endCall;
+    // Events
+    document.getElementById('sp-fab').onclick = () => document.getElementById('sp-panel').classList.toggle('open');
+    document.getElementById('sp-close').onclick = () => document.getElementById('sp-panel').classList.remove('open');
+    document.getElementById('sp-btn-dial').onclick = () => startCall(document.getElementById('sp-number-input').value);
+    document.getElementById('sp-btn-hangup').onclick = endCall;
 
-        document.querySelectorAll('.sp-key').forEach(btn => {
-            btn.onclick = () => document.getElementById('sp-number-input').value += btn.innerText;
-        });
+    document.querySelectorAll('.sp-key').forEach(btn => {
+        btn.onclick = () => document.getElementById('sp-number-input').value += btn.innerText;
+    });
 
-        if (mode === 'manual') {
-            updateStatus('Manual Mode', 'manual');
-            document.getElementById('sp-info-text').innerText = 'WebRTC Disabled (HTTPS required). Using Manual Logging.';
-            document.getElementById('sp-manual-hint').style.display = 'block';
-            document.getElementById('sp-keypad').style.display = 'none'; // No keys needed for manual
-        }
-
-        // Expose global
-        window.callLead = function (lead) {
-            document.getElementById('sp-panel').classList.add('open');
-            document.getElementById('sp-number-input').value = lead.phone;
-            startCall(lead.phone);
-        };
+    if (mode === 'manual') {
+        updateStatus('Manual Mode', 'manual');
+        document.getElementById('sp-info-text').innerText = 'WebRTC Disabled (HTTPS required). Using Manual Logging.';
+        document.getElementById('sp-manual-hint').style.display = 'block';
+        document.getElementById('sp-keypad').style.display = 'none'; // No keys needed for manual
     }
 
-    function setupSIP() {
-        updateStatus('Connecting SIP...', false);
-        try {
-            userAgent = new SIP.UserAgent({
-                uri: SIP.UserAgent.makeURI(SIP_CONFIG.uri),
-                transportOptions: { server: SIP_CONFIG.wsServers[0] },
-                authorizationUsername: SIP_CONFIG.authorizationUser,
-                authorizationPassword: SIP_CONFIG.password,
-                displayName: SIP_CONFIG.displayName,
-                register: true
-            });
+    // Expose global
+    window.callLead = function (lead) {
+        document.getElementById('sp-panel').classList.add('open');
+        document.getElementById('sp-number-input').value = lead.phone;
+        startCall(lead.phone);
+    };
+}
 
-            userAgent.start().then(() => {
-                isRegistered = true;
-                updateStatus('Online (' + sipUser + ')', true);
-            }).catch(err => {
-                console.error('SIP Connect Error:', err);
-                updateStatus('SIP Error - Local Mode', 'manual');
-                mode = 'manual';
-            });
-        } catch (e) {
-            console.error('SIP Init Error:', e);
-            updateStatus('SIP Failed', 'manual');
+function setupSIP() {
+    updateStatus('Connecting SIP...', false);
+    try {
+        userAgent = new SIP.UserAgent({
+            uri: SIP.UserAgent.makeURI(SIP_CONFIG.uri),
+            transportOptions: { server: SIP_CONFIG.wsServers[0] },
+            authorizationUsername: SIP_CONFIG.authorizationUser,
+            authorizationPassword: SIP_CONFIG.password,
+            displayName: SIP_CONFIG.displayName,
+            register: true
+        });
+
+        userAgent.start().then(() => {
+            isRegistered = true;
+            updateStatus('Online (' + sipUser + ')', true);
+        }).catch(err => {
+            console.error('SIP Connect Error:', err);
+            updateStatus('SIP Error - Local Mode', 'manual');
             mode = 'manual';
-        }
-    }
-
-    function startCall(number) {
-        if (!number) return;
-        currentCall = { number: number };
-
-        showInCallUI(number);
-        startTimer(); // Start timer immediately for UX
-
-        if (mode === 'webrtc' && isRegistered) {
-            // SIP Logic
-            const target = SIP.UserAgent.makeURI('sip:' + number + '@' + window.location.hostname);
-            const options = { sessionDescriptionHandlerOptions: { constraints: { audio: true, video: false } } };
-            session = userAgent.invite(target, options);
-            setupSession(session);
-        } else {
-            // Manual Logic
-            copyToClipboard(number);
-            // alert('Number copied (' + number + '). Dial on MicroSIP now.');
-        }
-    }
-
-    function setupSession(newSession) {
-        session = newSession;
-        session.stateChange.addListener((state) => {
-            if (state === SIP.SessionState.Terminated) {
-                endCall();
-            } else if (state === SIP.SessionState.Established) {
-                const remoteStream = new MediaStream();
-                session.sessionDescriptionHandler.peerConnection.getReceivers().forEach((receiver) => {
-                    if (receiver.track) remoteStream.addTrack(receiver.track);
-                });
-                document.getElementById('sp-remote-audio').srcObject = remoteStream;
-                document.getElementById('sp-remote-audio').play();
-            }
         });
+    } catch (e) {
+        console.error('SIP Init Error:', e);
+        updateStatus('SIP Failed', 'manual');
+        mode = 'manual';
     }
+}
 
-    function endCall() {
-        if (session && mode === 'webrtc') {
-            session.bye();
-            session = null;
+function startCall(number) {
+    if (!number) return;
+    currentCall = { number: number };
+
+    showInCallUI(number);
+    startTimer(); // Start timer immediately for UX
+
+    if (mode === 'webrtc' && isRegistered) {
+        // SIP Logic
+        const target = SIP.UserAgent.makeURI('sip:' + number + '@' + window.location.hostname);
+        const options = { sessionDescriptionHandlerOptions: { constraints: { audio: true, video: false } } };
+        session = userAgent.invite(target, options);
+        setupSession(session);
+    } else {
+        // Manual Logic
+        copyToClipboard(number);
+        // alert('Number copied (' + number + '). Dial on MicroSIP now.');
+    }
+}
+
+function setupSession(newSession) {
+    session = newSession;
+    session.stateChange.addListener((state) => {
+        if (state === SIP.SessionState.Terminated) {
+            endCall();
+        } else if (state === SIP.SessionState.Established) {
+            const remoteStream = new MediaStream();
+            session.sessionDescriptionHandler.peerConnection.getReceivers().forEach((receiver) => {
+                if (receiver.track) remoteStream.addTrack(receiver.track);
+            });
+            document.getElementById('sp-remote-audio').srcObject = remoteStream;
+            document.getElementById('sp-remote-audio').play();
         }
+    });
+}
 
-        stopTimer();
-        showDialpadUI();
-        // Here we could prompt for outcome
+function endCall() {
+    if (session && mode === 'webrtc') {
+        session.bye();
+        session = null;
     }
 
-    function showInCallUI(number) {
-        document.getElementById('sp-fab').classList.add('incall');
-        document.getElementById('sp-dialpad-ui').style.display = 'none';
-        document.getElementById('sp-incall-ui').classList.add('active');
-        document.getElementById('sp-active-number').innerText = number;
-    }
+    stopTimer();
+    showDialpadUI();
+    // Here we could prompt for outcome
+}
 
-    function showDialpadUI() {
-        document.getElementById('sp-fab').classList.remove('incall');
-        document.getElementById('sp-incall-ui').classList.remove('active');
-        document.getElementById('sp-dialpad-ui').style.display = 'block';
-    }
+function showInCallUI(number) {
+    document.getElementById('sp-fab').classList.add('incall');
+    document.getElementById('sp-dialpad-ui').style.display = 'none';
+    document.getElementById('sp-incall-ui').classList.add('active');
+    document.getElementById('sp-active-number').innerText = number;
+}
 
-    function updateStatus(text, type) {
-        document.getElementById('sp-status-text').innerText = text;
-        const dot = document.getElementById('sp-dot');
-        dot.className = 'sp-status-dot';
-        document.getElementById('sp-fab').className = 'sp-fab';
+function showDialpadUI() {
+    document.getElementById('sp-fab').classList.remove('incall');
+    document.getElementById('sp-incall-ui').classList.remove('active');
+    document.getElementById('sp-dialpad-ui').style.display = 'block';
+}
 
-        if (type === true) {
-            dot.classList.add('connected');
-            document.getElementById('sp-fab').classList.add('online');
-        } else if (type === 'manual') {
-            dot.classList.add('manual');
-            document.getElementById('sp-fab').classList.add('manual');
-        }
-    }
+function updateStatus(text, type) {
+    document.getElementById('sp-status-text').innerText = text;
+    const dot = document.getElementById('sp-dot');
+    dot.className = 'sp-status-dot';
+    document.getElementById('sp-fab').className = 'sp-fab';
 
-    function startTimer() {
-        if (callTimer) clearInterval(callTimer);
-        callStartTime = Date.now();
-        callTimer = setInterval(() => {
-            const delta = Math.floor((Date.now() - callStartTime) / 1000);
-            const m = Math.floor(delta / 60).toString().padStart(2, '0');
-            const s = (delta % 60).toString().padStart(2, '0');
-            document.getElementById('sp-timer').innerText = `${m}:${s}`;
-        }, 1000);
+    if (type === true) {
+        dot.classList.add('connected');
+        document.getElementById('sp-fab').classList.add('online');
+    } else if (type === 'manual') {
+        dot.classList.add('manual');
+        document.getElementById('sp-fab').classList.add('manual');
     }
+}
 
-    function stopTimer() {
-        if (callTimer) clearInterval(callTimer);
-        callTimer = null;
-    }
+function startTimer() {
+    if (callTimer) clearInterval(callTimer);
+    callStartTime = Date.now();
+    callTimer = setInterval(() => {
+        const delta = Math.floor((Date.now() - callStartTime) / 1000);
+        const m = Math.floor(delta / 60).toString().padStart(2, '0');
+        const s = (delta % 60).toString().padStart(2, '0');
+        document.getElementById('sp-timer').innerText = `${m}:${s}`;
+    }, 1000);
+}
 
-    function copyToClipboard(text) {
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(text);
-        } else {
-            const el = document.createElement('textarea');
-            el.value = text;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-        }
+function stopTimer() {
+    if (callTimer) clearInterval(callTimer);
+    callTimer = null;
+}
+
+function copyToClipboard(text) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+    } else {
+        const el = document.createElement('textarea');
+        el.value = text;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
     }
-})();
+}
+}) ();

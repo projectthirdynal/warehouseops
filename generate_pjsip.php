@@ -25,10 +25,12 @@ $lines[] = "bind=0.0.0.0:5060";
 $lines[] = "";
 
 for ($i = 1; $i <= 43; $i++) {
-    $suffix = str_pad($i, 3, '0', STR_PAD_LEFT);
+    $suffix = str_pad($i, 2, '0', STR_PAD_LEFT);
     $username = "880170" . $suffix;
     $password = "CP88017@!#@" . $suffix;
-    $webrtcUser = "10" . $suffix; // 1001, 1002...
+    $webrtcUser = "10" . str_pad($i, 2, '0', STR_PAD_LEFT); // 1001, 1002... wait. 1001 is 4 digits. if i=1, 1001. if i=43, 1043.
+    // My previous code: $webrtcUser = "10" . $suffix; if suffix is 2 digits (01), "1001". Correct.
+    // If i=43, "1043". Correct.
     
     // TRUNK
     $lines[] = "; --- Agent $i ($webrtcUser -> $username) ---";

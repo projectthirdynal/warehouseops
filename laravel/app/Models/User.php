@@ -65,6 +65,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the SIP account for this user.
+     */
+    public function sipAccount(): HasOne
+    {
+        return $this->hasOne(SipAccount::class);
+    }
+
+    /**
      * Get or create agent profile.
      */
     public function getOrCreateProfile(): AgentProfile
