@@ -662,5 +662,10 @@
         });
     </script>
     @stack('scripts')
+    
+    {{-- Softphone Widget (Global) --}}
+    @auth
+    <script src="{{ asset('js/softphone.js') }}?v={{ time() }}"></script>
+    @endauth
 </body>
 </html>

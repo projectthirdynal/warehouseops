@@ -40,3 +40,29 @@ Route::get('/waybill/{waybillNumber}', function ($waybillNumber) {
         'message' => 'Waybill not found'
     ], 404);
 });
+
+// ============================
+// VoIP Softphone API Routes
+// ============================
+Route::middleware('auth:sanctum')->group(function () {
+    // Call Management
+    Route::prefix('calls')->group(function () {
+        Route::post('/initiate', [\App\Http\Controllers\CallController::class, 'initiate']);
+        Route::patch('/{callId}/status', [\App\Http\Controllers\CallController::class, 'updateStatus']);
+        Route::patch('/{callId}/notes', [\App\Http\Controllers\CallController::class, 'addNotes']);
+        Route::get('/', [\App\Http\Controllers\CallController::class, 'index']);
+        Route::get('/monitoring', [\App\Http\Controllers\CallController::class, 'monitoring']);
+        Route::get('/history', [\App\Http\Controllers\CallController::class, 'history']);
+        Route::get('/{callId}', [\App\Http\Controllers\CallController::class, 'show']);
+    });
+
+    // SIP Configuration
+    Route::prefix('sip')->group(function () {
+        Route::get('/config', [\App\Http\Controllers\SipSettingsController::class, 'getConfig']);
+        Route::get('/accounts', [\App\Http\Controllers\SipSettingsController::class, 'index']);
+        Route::post('/accounts', [\App\Http\Controllers\SipSettingsController::class, 'store']);
+        Route::delete('/accounts/{id}', [\App\Http\Controllers\SipSettingsController::class, 'destroy']);
+        Route::post('/test', [\App\Http\Controllers\SipSettingsController::class, 'test']);
+    });
+});
+

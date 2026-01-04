@@ -13,6 +13,8 @@ use App\Http\Controllers\PendingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\LeadReportController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\CustomerController;
 
 // Authentication routes (public)
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -86,12 +88,23 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:leads_view'])->group(function () {
         Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
         Route::post('/leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.updateStatus');
-        
+
+        // Agent's recycling pool leads
+        Route::get('/recycling/mine', [App\Http\Controllers\RecyclingPoolController::class, 'mine'])->name('recycling.mine');
+
+        // Customer Profile & Search
+        Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+        Route::get('/customers-search', [CustomerController::class, 'search'])->name('customers.search');
+
         // Creation / Import (Agents & Admins)
         Route::middleware(['role:leads_create'])->group(function () {
             Route::get('/leads-import', [LeadController::class, 'importForm'])->name('leads.importForm');
             Route::post('/leads-import', [LeadController::class, 'import'])->name('leads.import');
             Route::post('/leads-mine', [LeadController::class, 'mine'])->name('leads.mine');
+
+            // Customer Actions
+            Route::post('/customers/{customer}/create-lead', [CustomerController::class, 'createLead'])->name('customers.createLead');
+            Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
         });
 
         // Admin / Team Leader Actions
@@ -122,6 +135,28 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/monitoring/stuck-cycles', [App\Http\Controllers\MonitoringController::class, 'stuckCycles'])->name('monitoring.stuck-cycles');
             Route::get('/monitoring/blocked-leads', [App\Http\Controllers\MonitoringController::class, 'blockedLeads'])->name('monitoring.blocked-leads');
             Route::get('/monitoring/recycle-heatmap', [App\Http\Controllers\MonitoringController::class, 'recycleHeatmap'])->name('monitoring.recycle-heatmap');
+
+            // Lead Recycling Pool
+            Route::get('/recycling/pool', [App\Http\Controllers\RecyclingPoolController::class, 'index'])->name('recycling.pool');
+            Route::get('/recycling/pool/stats', [App\Http\Controllers\RecyclingPoolController::class, 'stats'])->name('recycling.stats');
+            Route::post('/recycling/assign', [App\Http\Controllers\RecyclingPoolController::class, 'assign'])->name('recycling.assign');
+            Route::post('/recycling/{poolId}/outcome', [App\Http\Controllers\RecyclingPoolController::class, 'processOutcome'])->name('recycling.outcome');
+            Route::get('/recycling/{poolId}', [App\Http\Controllers\RecyclingPoolController::class, 'show'])->name('recycling.show');
+            Route::post('/recycling/cleanup', [App\Http\Controllers\RecyclingPoolController::class, 'cleanup'])->name('recycling.cleanup');
+
+            // Analytics & Reporting
+            Route::get('/reports/customer-lifetime-value', [ReportController::class, 'customerLifetimeValue'])->name('reports.customer-ltv');
+            Route::get('/reports/recycling-funnel', [ReportController::class, 'recyclingFunnel'])->name('reports.recycling-funnel');
+            Route::get('/reports/agent-performance', [ReportController::class, 'agentPerformance'])->name('reports.agent-performance');
+            Route::get('/reports/customer-cohorts', [ReportController::class, 'customerCohorts'])->name('reports.customer-cohorts');
+            Route::get('/reports/risk-trends', [ReportController::class, 'riskTrends'])->name('reports.risk-trends');
+            Route::get('/reports/order-status', [ReportController::class, 'orderStatus'])->name('reports.order-status');
+            Route::get('/reports/priority-distribution', [ReportController::class, 'priorityDistribution'])->name('reports.priority-distribution');
+            Route::get('/reports/dashboard', [ReportController::class, 'dashboard'])->name('reports.dashboard');
+
+            // Customer Management (Admin Only)
+            Route::post('/customers/{customer}/blacklist', [CustomerController::class, 'blacklist'])->name('customers.blacklist');
+            Route::post('/customers/{customer}/unblacklist', [CustomerController::class, 'unblacklist'])->name('customers.unblacklist');
         });
     });
 });
