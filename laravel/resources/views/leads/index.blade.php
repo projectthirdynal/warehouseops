@@ -1880,6 +1880,12 @@
                             </td>
                         <td style="text-align: right;">
                                 @if(!$lead->isLocked())
+                                <button type="button" class="action-btn call-btn" 
+                                        data-lead='@json(["id" => $lead->id, "name" => $lead->name, "phone" => $lead->phone, "previous_item" => $lead->previous_item])'
+                                        style="background: linear-gradient(135deg, #22c55e, #16a34a); margin-right: 6px;">
+                                    <i class="fas fa-phone"></i>
+                                    Call
+                                </button>
                                 <button type="button" class="action-btn update-btn" data-lead="{{ json_encode($lead) }}">
                                     <i class="fas fa-edit"></i>
                                     Update
@@ -2168,6 +2174,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeBtn = document.getElementById('closePanel');
     const cancelBtn = document.getElementById('cancelBtn');
     const updateBtns = document.querySelectorAll('.update-btn');
+    const callBtns = document.querySelectorAll('.call-btn');
+
+    // --- Call Button Handlers ---
+    callBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const lead = JSON.parse(this.dataset.lead);
+            if (typeof window.callLead === 'function') {
+                window.callLead(lead);
+            } else {
+                // Fallback: copy to clipboard
+                navigator.clipboard.writeText(lead.phone).then(() => {
+                    alert('Phone copied: ' + lead.phone + '\nDial in MicroSIP');
+                });
+            }
+        });
+    });
 
     function openPanel() {
         panel.classList.add('active');
