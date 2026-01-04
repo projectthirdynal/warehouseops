@@ -51,6 +51,10 @@ class LeadStateMachine
         ],
         Lead::STATUS_DELIVERED => [
             Lead::STATUS_RETURNED, 
+            Lead::STATUS_NEW,
+            Lead::STATUS_CALLBACK,
+            Lead::STATUS_SALE, // Direct re-order
+            'REORDER', // Assuming string lit if const missing
         ],
         Lead::STATUS_RETURNED => [
             Lead::STATUS_NEW, 

@@ -21,6 +21,8 @@ class Lead extends Model
     const STATUS_ARCHIVED = 'ARCHIVED';
 
     protected $fillable = [
+        'customer_id',
+        'recycling_pool_id',
         'name',
         'phone',
         'address',
@@ -76,6 +78,22 @@ class Lead extends Model
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 
+    /**
+     * Get the customer profile associated with this lead.
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * Get the recycling pool entry this lead came from (if any).
+     */
+    public function recyclingPoolEntry(): BelongsTo
+    {
+        return $this->belongsTo(LeadRecyclingPool::class, 'recycling_pool_id');
+    }
+
     public function logs(): HasMany
     {
         return $this->hasMany(LeadLog::class)->orderBy('created_at', 'desc');
@@ -112,7 +130,7 @@ class Lead extends Model
 
     public function isLocked(): bool
     {
-        return in_array($this->status, [self::STATUS_SALE, self::STATUS_DELIVERED]);
+        return $this->status === self::STATUS_SALE;
     }
 
     public function isFinalized(): bool
