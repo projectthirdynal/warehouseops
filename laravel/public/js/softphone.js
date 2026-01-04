@@ -1,22 +1,29 @@
 /**
- * WebRTC Softphone Widget - Asterisk Gateway Version
- * Connects to local Asterisk via WebSocket (ws://host:8088/ws)
- * Asterisk bridges to SIP Provider via UDP
+ * Hybrid Softphone Widget
+ * 1. Tries WebRTC (Asterisk Gateway) first.
+ * 2. Falls back to Manual Mode if WebRTC fails (e.g. no HTTPS).
  */
 
 (function () {
     'use strict';
 
-    // Configuration - Hardcoded for Test (User 1001)
+    // Get User ID from meta tag or derive from random (temporary)
+    // Ideally we pass this from Blade
+    const userId = window.laravelUserId || Math.floor(Math.random() * 43) + 1;
+    // Map User ID to 1001-1043 range
+    const sipExtension = 1000 + ((userId % 43) || 1);
+    const sipUser = sipExtension.toString();
+
+    // Configuration
     const SIP_CONFIG = {
-        uri: 'sip:1001@' + window.location.hostname,
+        uri: 'sip:' + sipUser + '@' + window.location.hostname,
         wsServers: ['ws://' + window.location.hostname + ':8088/ws'],
-        authorizationUser: '1001',
+        authorizationUser: sipUser,
         password: 'webrtc_secret',
-        displayName: 'Agent 1001'
+        displayName: 'Agent ' + sipUser
     };
 
-    // State
+    let mode = 'manual'; // 'webrtc' or 'manual'
     let userAgent = null;
     let session = null;
     let isRegistered = false;
@@ -24,17 +31,34 @@
     let callTimer = null;
     let callStartTime = null;
 
-    // Load SIP.js from CDN if not present
+    // Load SIP.js
     if (typeof SIP === 'undefined') {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/sip.js@0.21.2/dist/sip.min.js';
-        script.onload = init;
+        script.onload = checkCapability;
+        script.onerror = () => initManual(); // Fallback if CDN fails
         document.head.appendChild(script);
     } else {
-        init();
+        checkCapability();
     }
 
-    function createWidget() {
+    function checkCapability() {
+        // WebRTC requires HTTPS or Localhost
+        const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+        if (isSecure && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            console.log('Softphone: WebRTC supported. Attempting connection...');
+            mode = 'webrtc';
+            initWidget();
+            setupSIP();
+        } else {
+            console.warn('Softphone: WebRTC not supported (Need HTTPS). Falling back to Manual Mode.');
+            mode = 'manual';
+            initWidget();
+        }
+    }
+
+    function initWidget() {
         if (document.getElementById('softphone-widget')) return;
 
         const widget = document.createElement('div');
@@ -59,8 +83,12 @@
                     cursor: pointer;
                     box-shadow: 0 4px 20px rgba(0,0,0,0.2);
                     transition: all 0.3s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                 }
                 .sp-fab.online { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+                .sp-fab.manual { background: linear-gradient(135deg, #0ea5e9, #38bdf8); }
                 .sp-fab.incall { background: linear-gradient(135deg, #22c55e, #16a34a); animation: sp-pulse 2s infinite; }
                 @keyframes sp-pulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); } 70% { box-shadow: 0 0 0 15px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
                 
@@ -88,9 +116,13 @@
                 }
                 .sp-status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; margin-right: 8px; }
                 .sp-status-dot.connected { background: #22c55e; }
+                .sp-status-dot.manual { background: #38bdf8; }
+                
                 .sp-title { color: #f1f3f5; font-size: 14px; font-weight: 600; display: flex; align-items: center; }
                 
                 .sp-body { padding: 20px; color: #f1f3f5; }
+                
+                .sp-info { font-size: 12px; color: #94a3b8; text-align: center; margin-bottom: 15px; }
                 
                 .sp-input-group { display: flex; gap: 8px; margin-bottom: 15px; }
                 .sp-input { flex: 1; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px; border-radius: 8px; }
@@ -100,6 +132,7 @@
                 .sp-incall-ui.active { display: block; }
                 .sp-number-display { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
                 .sp-timer { font-size: 32px; font-family: monospace; color: #22c55e; margin-bottom: 20px; }
+                .sp-manual-hint { font-size: 11px; color: #cbd5e1; margin-bottom: 10px; display: none; }
                 
                 .sp-controls { display: flex; justify-content: center; gap: 15px; }
                 .sp-ctrl-btn { width: 50px; height: 50px; border-radius: 50%; border: none; color: white; font-size: 18px; cursor: pointer; }
@@ -109,8 +142,7 @@
                 .sp-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 15px; }
                 .sp-key { background: rgba(255,255,255,0.05); border: none; padding: 10px; color: white; border-radius: 6px; cursor: pointer; }
                 .sp-key:hover { background: rgba(255,255,255,0.1); }
-
-                /* Audio elements hidden */
+                
                 audio { display: none; }
             </style>
             
@@ -120,35 +152,30 @@
                 <div class="sp-header">
                     <div class="sp-title">
                         <div class="sp-status-dot" id="sp-dot"></div>
-                        <span id="sp-status-text">Disconnected</span>
+                        <span id="sp-status-text">Initializing...</span>
                     </div>
                     <i class="fas fa-times" style="cursor:pointer; color:#94a3b8" id="sp-close"></i>
                 </div>
                 
                 <div class="sp-body">
+                    <div class="sp-info" id="sp-info-text"></div>
+                    
                     <div id="sp-dialpad-ui">
                         <div class="sp-input-group">
                             <input type="text" class="sp-input" id="sp-number-input" placeholder="Enter number...">
                             <button class="sp-dial-btn" id="sp-btn-dial"><i class="fas fa-phone"></i></button>
                         </div>
-                        <div class="sp-keypad">
-                            <button class="sp-key" onclick="document.getElementById('sp-number-input').value += '1'">1</button>
-                            <button class="sp-key" onclick="document.getElementById('sp-number-input').value += '2'">2</button>
-                            <button class="sp-key" onclick="document.getElementById('sp-number-input').value += '3'">3</button>
-                            <button class="sp-key" onclick="document.getElementById('sp-number-input').value += '4'">4</button>
-                            <button class="sp-key" onclick="document.getElementById('sp-number-input').value += '5'">5</button>
-                            <button class="sp-key" onclick="document.getElementById('sp-number-input').value += '6'">6</button>
-                            <button class="sp-key" onclick="document.getElementById('sp-number-input').value += '7'">7</button>
-                            <button class="sp-key" onclick="document.getElementById('sp-number-input').value += '8'">8</button>
-                            <button class="sp-key" onclick="document.getElementById('sp-number-input').value += '9'">9</button>
-                            <button class="sp-key" onclick="document.getElementById('sp-number-input').value += '*'">*</button>
-                            <button class="sp-key" onclick="document.getElementById('sp-number-input').value += '0'">0</button>
-                            <button class="sp-key" onclick="document.getElementById('sp-number-input').value += '#'">#</button>
+                        <div class="sp-keypad" id="sp-keypad">
+                            <button class="sp-key">1</button><button class="sp-key">2</button><button class="sp-key">3</button>
+                            <button class="sp-key">4</button><button class="sp-key">5</button><button class="sp-key">6</button>
+                            <button class="sp-key">7</button><button class="sp-key">8</button><button class="sp-key">9</button>
+                            <button class="sp-key">*</button><button class="sp-key">0</button><button class="sp-key">#</button>
                         </div>
                     </div>
                     
                     <div class="sp-incall-ui" id="sp-incall-ui">
                         <div class="sp-number-display" id="sp-active-number">...</div>
+                        <div class="sp-manual-hint" id="sp-manual-hint">Dial this number on MicroSIP</div>
                         <div class="sp-timer" id="sp-timer">00:00</div>
                         <div class="sp-controls">
                             <button class="sp-ctrl-btn sp-btn-mute" id="sp-btn-mute"><i class="fas fa-microphone"></i></button>
@@ -159,110 +186,106 @@
             </div>
             
             <audio id="sp-remote-audio" autoplay></audio>
-            <audio id="sp-ringtone" loop src="https://upload.wikimedia.org/wikipedia/commons/e/e4/Old_Telephone_Ringing_Sound_Effect.ogg"></audio>
         `;
         document.body.appendChild(widget);
 
-        // Event Listeners
+        // Events
         document.getElementById('sp-fab').onclick = () => document.getElementById('sp-panel').classList.toggle('open');
         document.getElementById('sp-close').onclick = () => document.getElementById('sp-panel').classList.remove('open');
-        document.getElementById('sp-btn-dial').onclick = () => makeCall(document.getElementById('sp-number-input').value);
-        document.getElementById('sp-btn-hangup').onclick = hangupCall;
+        document.getElementById('sp-btn-dial').onclick = () => startCall(document.getElementById('sp-number-input').value);
+        document.getElementById('sp-btn-hangup').onclick = endCall;
 
-        // Global hook for click-to-call
+        document.querySelectorAll('.sp-key').forEach(btn => {
+            btn.onclick = () => document.getElementById('sp-number-input').value += btn.innerText;
+        });
+
+        if (mode === 'manual') {
+            updateStatus('Manual Mode', 'manual');
+            document.getElementById('sp-info-text').innerText = 'WebRTC Disabled (HTTPS required). Using Manual Logging.';
+            document.getElementById('sp-manual-hint').style.display = 'block';
+            document.getElementById('sp-keypad').style.display = 'none'; // No keys needed for manual
+        }
+
+        // Expose global
         window.callLead = function (lead) {
             document.getElementById('sp-panel').classList.add('open');
             document.getElementById('sp-number-input').value = lead.phone;
-            makeCall(lead.phone);
+            startCall(lead.phone);
         };
-    }
-
-    function init() {
-        createWidget();
-        setupSIP();
     }
 
     function setupSIP() {
-        updateStatus('Connecting...', false);
+        updateStatus('Connecting SIP...', false);
+        try {
+            userAgent = new SIP.UserAgent({
+                uri: SIP.UserAgent.makeURI(SIP_CONFIG.uri),
+                transportOptions: { server: SIP_CONFIG.wsServers[0] },
+                authorizationUsername: SIP_CONFIG.authorizationUser,
+                authorizationPassword: SIP_CONFIG.password,
+                displayName: SIP_CONFIG.displayName,
+                register: true
+            });
 
-        userAgent = new SIP.UserAgent({
-            uri: SIP.UserAgent.makeURI(SIP_CONFIG.uri),
-            transportOptions: {
-                server: SIP_CONFIG.wsServers[0]
-            },
-            authorizationUsername: SIP_CONFIG.authorizationUser,
-            authorizationPassword: SIP_CONFIG.password,
-            displayName: SIP_CONFIG.displayName,
-            register: true
-        });
-
-        userAgent.start().then(() => {
-            isRegistered = true;
-            updateStatus('Online', true);
-        }).catch(err => {
-            console.error('SIP Connect Error:', err);
-            updateStatus('Connection Failed', false);
-        });
-
-        userAgent.delegate = {
-            onInvite(invitation) {
-                // Auto-answer logic or UI prompt could go here
-                // For now, simple reject or manual answer
-                // invitation.accept();
-            }
-        };
+            userAgent.start().then(() => {
+                isRegistered = true;
+                updateStatus('Online (' + sipUser + ')', true);
+            }).catch(err => {
+                console.error('SIP Connect Error:', err);
+                updateStatus('SIP Error - Local Mode', 'manual');
+                mode = 'manual';
+            });
+        } catch (e) {
+            console.error('SIP Init Error:', e);
+            updateStatus('SIP Failed', 'manual');
+            mode = 'manual';
+        }
     }
 
-    function makeCall(number) {
-        if (!number || !isRegistered) return;
-
-        const target = SIP.UserAgent.makeURI('sip:' + number + '@' + window.location.hostname);
-        if (!target) return;
-
-        const options = {
-            sessionDescriptionHandlerOptions: {
-                constraints: { audio: true, video: false }
-            }
-        };
-
-        session = userAgent.invite(target, options);
-        setupSession(session);
+    function startCall(number) {
+        if (!number) return;
         currentCall = { number: number };
 
         showInCallUI(number);
+        startTimer(); // Start timer immediately for UX
+
+        if (mode === 'webrtc' && isRegistered) {
+            // SIP Logic
+            const target = SIP.UserAgent.makeURI('sip:' + number + '@' + window.location.hostname);
+            const options = { sessionDescriptionHandlerOptions: { constraints: { audio: true, video: false } } };
+            session = userAgent.invite(target, options);
+            setupSession(session);
+        } else {
+            // Manual Logic
+            copyToClipboard(number);
+            // alert('Number copied (' + number + '). Dial on MicroSIP now.');
+        }
     }
 
     function setupSession(newSession) {
         session = newSession;
-
         session.stateChange.addListener((state) => {
-            console.log('Session State:', state);
-            switch (state) {
-                case SIP.SessionState.Establishing:
-                    document.getElementById('sp-active-number').innerText = 'Calling...';
-                    break;
-                case SIP.SessionState.Established:
-                    const remoteStream = new MediaStream();
-                    session.sessionDescriptionHandler.peerConnection.getReceivers().forEach((receiver) => {
-                        if (receiver.track) remoteStream.addTrack(receiver.track);
-                    });
-                    document.getElementById('sp-remote-audio').srcObject = remoteStream;
-                    document.getElementById('sp-remote-audio').play();
-                    startTimer();
-                    break;
-                case SIP.SessionState.Terminated:
-                    stopTimer();
-                    showDialpadUI();
-                    session = null;
-                    break;
+            if (state === SIP.SessionState.Terminated) {
+                endCall();
+            } else if (state === SIP.SessionState.Established) {
+                const remoteStream = new MediaStream();
+                session.sessionDescriptionHandler.peerConnection.getReceivers().forEach((receiver) => {
+                    if (receiver.track) remoteStream.addTrack(receiver.track);
+                });
+                document.getElementById('sp-remote-audio').srcObject = remoteStream;
+                document.getElementById('sp-remote-audio').play();
             }
         });
     }
 
-    function hangupCall() {
-        if (session) {
-            session.bye(); // or session.terminate()
+    function endCall() {
+        if (session && mode === 'webrtc') {
+            session.bye();
+            session = null;
         }
+
+        stopTimer();
+        showDialpadUI();
+        // Here we could prompt for outcome
     }
 
     function showInCallUI(number) {
@@ -278,19 +301,23 @@
         document.getElementById('sp-dialpad-ui').style.display = 'block';
     }
 
-    function updateStatus(text, online) {
+    function updateStatus(text, type) {
         document.getElementById('sp-status-text').innerText = text;
         const dot = document.getElementById('sp-dot');
-        if (online) {
+        dot.className = 'sp-status-dot';
+        document.getElementById('sp-fab').className = 'sp-fab';
+
+        if (type === true) {
             dot.classList.add('connected');
             document.getElementById('sp-fab').classList.add('online');
-        } else {
-            dot.classList.remove('connected');
-            document.getElementById('sp-fab').classList.remove('online');
+        } else if (type === 'manual') {
+            dot.classList.add('manual');
+            document.getElementById('sp-fab').classList.add('manual');
         }
     }
 
     function startTimer() {
+        if (callTimer) clearInterval(callTimer);
         callStartTime = Date.now();
         callTimer = setInterval(() => {
             const delta = Math.floor((Date.now() - callStartTime) / 1000);
@@ -305,4 +332,16 @@
         callTimer = null;
     }
 
+    function copyToClipboard(text) {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text);
+        } else {
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+        }
+    }
 })();

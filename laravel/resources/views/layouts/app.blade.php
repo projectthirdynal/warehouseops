@@ -665,6 +665,9 @@
     
     {{-- Softphone Widget (Global) --}}
     @auth
+    <script>
+        window.laravelUserId = {{ auth()->id() }};
+    </script>
     <script src="{{ asset('js/softphone.js') }}?v={{ time() }}"></script>
     @endauth
 </body>
