@@ -170,4 +170,11 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/customers/{customer}/unblacklist', [CustomerController::class, 'unblacklist'])->name('customers.unblacklist');
         });
     });
+
+    // Monitoring
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring.index');
+        Route::get('/monitoring/stats', [MonitoringController::class, 'getStats'])->name('monitoring.stats');
+        Route::post('/monitoring/heartbeat', [MonitoringController::class, 'heartbeat'])->name('monitoring.heartbeat');
+    });
 });

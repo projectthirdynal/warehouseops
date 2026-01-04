@@ -2,119 +2,84 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Lead;
-use App\Models\LeadCycle;
-use App\Models\User;
-use App\Models\Waybill;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
+use App\Models\User;
+use App\Models\CallLog;
+use App\Models\Lead;
+use Illuminate\Support\Facades\Cache;
 
 class MonitoringController extends Controller
 {
     /**
-     * Display the main monitoring dashboard.
+     * Display the Monitoring Dashboard.
      */
-    public function dashboard()
+    public function index()
     {
-        if (!Auth::user()->can('leads_manage')) {
-             abort(403);
-        }
-
-        return view('monitoring.dashboard');
+        return view('monitoring.index');
     }
 
     /**
-     * Get live stats for agent cycles.
+     * API to get real-time stats for the dashboard.
+     * Called via AJAX polling every 5-10 seconds.
      */
-    public function liveStats()
+    public function getStats()
     {
-        // Get all agents with active profiles
-        $agents = User::whereHas('profile')
-            ->with(['profile', 'leadCycles' => function ($q) {
-                $q->where('status', LeadCycle::STATUS_ACTIVE);
-            }])
-            ->get()
-            ->map(function ($agent) {
-                $activeCount = $agent->leadCycles->count();
-                $max = $agent->profile->max_active_cycles;
-                $load = $max > 0 ? round(($activeCount / $max) * 100) : 0;
+        // 1. Agent Status (from Cache/Heartbeat)
+        $agents = User::where('role', 'agent')->get()->map(function ($agent) {
+            $lastActivity = Cache::get('agent_activity_' . $agent->id);
+            $status = 'offline';
+            $currentLead = null;
 
-                return [
-                    'id' => $agent->id,
-                    'name' => $agent->name,
-                    'active_cycles' => $activeCount,
-                    'max_cycles' => $max,
-                    'load_percentage' => $load,
-                    'is_online' => $agent->profile->is_available // Simplified proxy
-                ];
-            });
+            if ($lastActivity) {
+                // Considered online if active in last 2 minutes
+                if (now()->diffInSeconds($lastActivity['time']) < 120) {
+                    $status = $lastActivity['status'] ?? 'online'; // online or busy
+                    $currentLead = $lastActivity['lead'] ?? null;
+                }
+            }
 
-        return response()->json($agents);
+            return [
+                'id' => $agent->id,
+                'name' => $agent->name,
+                'avatar' => substr($agent->name, 0, 1),
+                'status' => $status,
+                'current_lead' => $currentLead,
+                'sip_account' => $agent->sipAccount->username ?? '?',
+            ];
+        });
+
+        // 2. Daily Metrics
+        $today = now()->startOfDay();
+        $metrics = [
+            'total_calls' => CallLog::where('created_at', '>=', $today)->count(),
+            'sales_today' => Lead::where('status', Lead::STATUS_SALE)->where('updated_at', '>=', $today)->count(),
+            'rejected_today' => Lead::where('qc_status', Lead::QC_STATUS_FAILED)->where('qc_at', '>=', $today)->count(),
+            'active_calls' => $agents->where('status', 'busy')->count(),
+            'online_agents' => $agents->where('status', '!=', 'offline')->count(),
+        ];
+
+        return response()->json([
+            'agents' => $agents,
+            'metrics' => $metrics
+        ]);
     }
 
     /**
-     * Get stuck cycles (Guardian Logic).
+     * Heartbeat API called by softphone.js
+     * Updates the agent's status in Cache.
      */
-    public function stuckCycles()
+    public function heartbeat(Request $request)
     {
-        $cycles = LeadCycle::where('status', LeadCycle::STATUS_ACTIVE)
-            ->where('created_at', '<', now()->subHours(24))
-            ->where('call_attempts', 0)
-            ->with(['agent', 'lead'])
-            ->limit(50)
-            ->get();
+        // Valid statuses: 'online', 'busy' (in-call)
+        $status = $request->input('status', 'online');
+        $leadInfo = $request->input('lead', null); // "John Doe (Product X)"
 
-        return response()->json($cycles);
-    }
+        Cache::put('agent_activity_' . auth()->id(), [
+            'time' => now(),
+            'status' => $status,
+            'lead' => $leadInfo
+        ], 120); // Expire after 2 mins
 
-    /**
-     * Get leads blocked by active waybills.
-     */
-    public function blockedLeads()
-    {
-        // Leads that have waybills in PENDING or IN_TRANSIT
-        // Using Waybill statuses (assuming standard naming from Waybill system)
-        $leads = Lead::whereHas('waybills', function ($q) {
-                $q->whereIn('status', ['PENDING', 'IN_TRANSIT', 'OUT_FOR_DELIVERY']);
-            })
-            ->withCount('waybills')
-            ->limit(50)
-            ->get()
-            ->map(function ($lead) {
-                return [
-                    'id' => $lead->id,
-                    'name' => $lead->name,
-                    'status' => $lead->status,
-                    'waybill_count' => $lead->waybills_count
-                ];
-            });
-
-        return response()->json($leads);
-    }
-
-    /**
-     * Get recycle heatmap data (Last 24 hours).
-     */
-    public function recycleHeatmap()
-    {
-        // Count cycles closed as REJECT per hour
-        $data = LeadCycle::where('status', LeadCycle::STATUS_CLOSED_REJECT)
-            ->where('closed_at', '>=', now()->subHours(24))
-            ->select(
-                DB::raw('HOUR(closed_at) as hour'),
-                DB::raw('count(*) as count')
-            )
-            ->groupBy('hour')
-            ->orderBy('hour')
-            ->pluck('count', 'hour');
-
-        // Fill missing hours
-        $formatted = [];
-        for ($i = 0; $i < 24; $i++) {
-            $formatted[$i] = $data[$i] ?? 0;
-        }
-
-        return response()->json($formatted);
+        return response()->json(['success' => true]);
     }
 }

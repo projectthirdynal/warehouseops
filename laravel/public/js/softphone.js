@@ -17,6 +17,9 @@
         sipUser = SIP_CONFIG.authorizationUsername;
 
         sipUser = SIP_CONFIG.authorizationUsername;
+
+        // Start Heartbeat
+        startHeartbeat();
     } else {
         console.warn('Softphone: No SIP Config found for this user.');
     }
@@ -356,5 +359,22 @@ function copyToClipboard(text) {
         document.execCommand('copy');
         document.body.removeChild(el);
     }
+}
+    }
+
+function startHeartbeat() {
+    setInterval(() => {
+        const status = currentCall ? 'busy' : 'online';
+        const lead = currentCall ? (currentCall.name || currentCall.number) : null;
+
+        fetch('/monitoring/heartbeat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.head.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ status, lead })
+        }).catch(e => console.error('Heartbeat failed', e));
+    }, 30000); // 30 seconds
 }
 }) ();
