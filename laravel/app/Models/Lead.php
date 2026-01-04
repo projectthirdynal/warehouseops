@@ -128,6 +128,14 @@ class Lead extends Model
         return $this->hasMany(Waybill::class);
     }
 
+    /**
+     * Get waybills matched by phone number (Aggregates history for duplicates).
+     */
+    public function phoneWaybills(): HasMany
+    {
+        return $this->hasMany(Waybill::class, 'receiver_phone', 'phone');
+    }
+
     public function isLocked(): bool
     {
         return $this->status === self::STATUS_SALE;

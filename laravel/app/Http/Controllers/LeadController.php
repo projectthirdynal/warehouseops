@@ -268,7 +268,7 @@ class LeadController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $query = Lead::with(['assignedAgent', 'orders', 'waybills']);
+        $query = Lead::with(['assignedAgent', 'orders', 'waybills', 'phoneWaybills']);
 
         // Agents only see their own leads
         if ($user->role === 'agent') {
