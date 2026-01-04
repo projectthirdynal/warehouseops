@@ -84,9 +84,20 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 
-    // Leads Management
+    // Lead Management
+    Route::resource('leads', LeadController::class);
+    Route::post('leads/check-duplicates', [LeadController::class, 'checkDuplicates'])->name('leads.check-duplicates');
+    
+    // QC / Checker Workflow
+    Route::prefix('qc')->name('qc.')->group(function () {
+        Route::get('/dashboard', [QcController::class, 'index'])->name('index');
+        Route::post('/{lead}/approve', [QcController::class, 'approve'])->name('approve');
+        Route::post('/{lead}/reject', [QcController::class, 'reject'])->name('reject');
+        Route::post('/{lead}/recycle', [QcController::class, 'recycle'])->name('recycle');
+    });
+
+    // Leads Management (Original block, modified to fit new structure)
     Route::middleware(['role:leads_view'])->group(function () {
-        Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
         Route::post('/leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.updateStatus');
 
         // Agent's recycling pool leads

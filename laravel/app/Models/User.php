@@ -147,6 +147,16 @@ class User extends Authenticatable
         return $this->role === self::ROLE_SUPERADMIN;
     }
 
+    public function isAgent(): bool
+    {
+        return $this->role === self::ROLE_AGENT;
+    }
+
+    public function isChecker(): bool
+    {
+        return $this->role === 'checker';
+    }
+
     /**
      * Check if user can access a specific feature
      */

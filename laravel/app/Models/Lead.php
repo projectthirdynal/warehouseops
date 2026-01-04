@@ -17,8 +17,15 @@ class Lead extends Model
     const STATUS_REORDER = 'REORDER';
     const STATUS_DELIVERED = 'DELIVERED';
     const STATUS_RETURNED = 'RETURNED';
-    const STATUS_CANCELLED = 'CANCELLED';
+    const STATUS_REJECTED = 'Rejected'; // Generic rejection
+    const STATUS_CANCELLED = 'Cancelled'; // Order Cancelled
     const STATUS_ARCHIVED = 'ARCHIVED';
+
+    // QC Status Constants
+    const QC_STATUS_PENDING = 'pending';
+    const QC_STATUS_PASSED = 'passed';
+    const QC_STATUS_FAILED = 'failed';
+    const QC_STATUS_RECYCLED = 'recycled';
 
     protected $fillable = [
         'customer_id',
@@ -126,6 +133,31 @@ class Lead extends Model
     public function waybills(): HasMany
     {
         return $this->hasMany(Waybill::class);
+    }
+
+    public function checker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'qc_by');
+    }
+
+    /**
+     * Scope a query to only include sales pending QC.
+     */
+    public function scopePendingQc($query)
+    {
+        return $query->where('status', self::STATUS_SALE)
+                     ->where('qc_status', self::QC_STATUS_PENDING);
+    }
+
+    public function getQcStatusBadgeAttribute()
+    {
+    	$colors = [
+    		'pending' => 'warning',
+    		'passed' => 'success',
+    		'failed' => 'danger',
+    		'recycled' => 'info',
+    	];
+    	return $colors[$this->qc_status] ?? 'secondary';
     }
 
     /**
