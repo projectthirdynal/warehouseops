@@ -14,11 +14,7 @@
     if (window.sipConfig) {
         SIP_CONFIG = window.sipConfig;
 
-        // Dynamic Hostname Fix for Hybrid env
-        const protocol = (window.location.protocol === 'https:') ? 'wss' : 'ws';
-        const port = (protocol === 'wss') ? '8089' : '8088';
-        SIP_CONFIG.wsServers = [`${protocol}://${window.location.hostname}:${port}/ws`];
-        SIP_CONFIG.uri = `sip:${SIP_CONFIG.authorizationUsername}@${window.location.hostname}`;
+        sipUser = SIP_CONFIG.authorizationUsername;
 
         sipUser = SIP_CONFIG.authorizationUsername;
     } else {
@@ -274,7 +270,7 @@ function startCall(number) {
     } else {
         // Manual Logic
         copyToClipboard(number);
-        // alert('Number copied (' + number + '). Dial on MicroSIP now.');
+        console.log('Manual mode: Copied ' + number);
     }
 }
 
