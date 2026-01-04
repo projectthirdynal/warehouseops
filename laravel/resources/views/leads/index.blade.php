@@ -1880,8 +1880,16 @@
                             </td>
                         <td style="text-align: right;">
                                 @if(!$lead->isLocked())
-                                <button type="button" class="action-btn call-btn" 
-                                        data-lead='@json(["id" => $lead->id, "name" => $lead->name, "phone" => $lead->phone, "previous_item" => $lead->previous_item])'
+                                @php
+                                    $leadData = [
+                                        'id' => $lead->id,
+                                        'name' => $lead->name,
+                                        'phone' => $lead->phone,
+                                        'previous_item' => $lead->previous_item
+                                    ];
+                                @endphp
+                                <button type="button" class="action-btn call-btn"
+                                        data-lead='@json($leadData)'
                                         style="background: linear-gradient(135deg, #22c55e, #16a34a); margin-right: 6px;">
                                     <i class="fas fa-phone"></i>
                                     Call
