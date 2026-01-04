@@ -268,7 +268,7 @@ class LeadController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $query = Lead::with(['assignedAgent', 'orders', 'waybills', 'phoneWaybills']);
+        $query = Lead::with(['assignedAgent', 'customer', 'orders', 'waybills', 'phoneWaybills']);
 
         // Agents only see their own leads
         if ($user->role === 'agent') {
@@ -332,7 +332,12 @@ class LeadController extends Controller
 
         $leads = $query->latest()->paginate(20);
         $agents = User::where('role', 'agent')->get();
-        $productOptions = \App\Models\Waybill::whereNotNull('item_name')->distinct()->orderBy('item_name')->pluck('item_name');
+        $productOptions = \App\Models\Waybill::whereNotNull('item_name')
+            ->where('item_name', '!=', '')
+            ->distinct()
+            ->orderBy('item_name')
+            ->pluck('item_name')
+            ->filter(fn($name) => trim($name) !== '');
 
         return view('leads.index', compact('leads', 'agents', 'productOptions'));
     }
@@ -342,7 +347,14 @@ class LeadController extends Controller
      */
     public function importForm()
     {
-        $productOptions = \App\Models\Waybill::whereNotNull('item_name')->distinct()->orderBy('item_name')->pluck('item_name');
+        // Get distinct item names from waybills, filtering out empty/whitespace values
+        $productOptions = \App\Models\Waybill::whereNotNull('item_name')
+            ->where('item_name', '!=', '')
+            ->where('item_name', 'NOT LIKE', ' %') // Exclude whitespace-only
+            ->distinct()
+            ->orderBy('item_name')
+            ->pluck('item_name')
+            ->filter(fn($name) => trim($name) !== ''); // Extra safety filter
         return view('leads.import', compact('productOptions'));
     }
 
@@ -461,7 +473,12 @@ class LeadController extends Controller
 
         $leads = $query->latest('updated_at')->paginate(50);
         $agents = User::where('role', 'agent')->get();
-        $productOptions = \App\Models\Waybill::whereNotNull('item_name')->distinct()->orderBy('item_name')->pluck('item_name');
+        $productOptions = \App\Models\Waybill::whereNotNull('item_name')
+            ->where('item_name', '!=', '')
+            ->distinct()
+            ->orderBy('item_name')
+            ->pluck('item_name')
+            ->filter(fn($name) => trim($name) !== '');
 
         return view('leads.monitoring', compact('leads', 'agents', 'productOptions'));
     }
