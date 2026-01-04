@@ -22,6 +22,9 @@ Schedule::job(new RecalculateCustomerMetrics())
     ->withoutOverlapping();
 
 Schedule::command('leads:guardian-audit')->dailyAt('02:30');
+Schedule::command('leads:snapshot-active')->dailyAt('03:00');
+Schedule::command('leads:sync-waybill-status')->hourly();
+
 
 // Lead recycling pool maintenance - runs at 3:00 AM daily
 Schedule::call(function () {
