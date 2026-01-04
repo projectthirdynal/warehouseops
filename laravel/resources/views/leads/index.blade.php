@@ -327,16 +327,61 @@
                             </td>
                             <td class="px-3">
                                 <div>
-                                    <div class="fw-bold text-white mb-0 h6">{{ $lead->name }}</div>
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <div class="fw-bold text-white h6 mb-0">{{ $lead->name }}</div>
+
+                                        @if($lead->customer)
+                                            {{-- Customer Profile Link --}}
+                                            <a href="{{ route('customers.show', $lead->customer->id) }}"
+                                               class="text-info text-decoration-none small"
+                                               data-bs-toggle="tooltip"
+                                               title="View Customer Profile">
+                                                <i class="fas fa-user-circle"></i>
+                                            </a>
+
+                                            {{-- Customer Score Badge --}}
+                                            @php
+                                                $score = $lead->customer->customer_score;
+                                                $scoreClass = $score >= 70 ? 'success' : ($score >= 50 ? 'warning' : 'danger');
+                                            @endphp
+                                            <span class="badge bg-{{ $scoreClass }} bg-opacity-10 text-{{ $scoreClass }} border border-{{ $scoreClass }} border-opacity-20 small"
+                                                  data-bs-toggle="tooltip"
+                                                  title="Customer Score">
+                                                {{ $score }}
+                                            </span>
+
+                                            {{-- Risk Level Badge --}}
+                                            @if($lead->customer->risk_level !== 'UNKNOWN')
+                                                @php
+                                                    $riskColors = [
+                                                        'LOW' => 'success',
+                                                        'MEDIUM' => 'warning',
+                                                        'HIGH' => 'danger',
+                                                        'BLACKLIST' => 'dark'
+                                                    ];
+                                                    $riskColor = $riskColors[$lead->customer->risk_level] ?? 'secondary';
+                                                @endphp
+                                                <span class="badge bg-{{ $riskColor }} bg-opacity-10 text-{{ $riskColor }} border border-{{ $riskColor }} border-opacity-20 x-small">
+                                                    {{ $lead->customer->risk_level }}
+                                                </span>
+                                            @endif
+                                        @endif
+                                    </div>
+
                                     <div class="text-info small fs-7 mt-1 d-flex align-items-center gap-2">
                                         <span><i class="fas fa-phone-alt me-1 opacity-50"></i> {{ $lead->phone }}</span>
-                                        
-                                        @if($lead->history)
-                                            <div class="d-flex align-items-center gap-2 ms-2" data-bs-toggle="tooltip" data-bs-html="true" title="Success: {{ $lead->history['completed'] }}/{{ $lead->history['total'] }}<br>Returned: {{ $lead->history['returned'] }}<br>Rate: {{ $lead->history['rate'] }}%">
-                                                <div class="progress bg-dark border border-white border-opacity-10" style="width: 40px; height: 6px;">
-                                                    <div class="progress-bar bg-{{ $lead->history['class'] }}" role="progressbar" style="width: {{ $lead->history['rate'] }}%"></div>
+
+                                        @if($lead->customer && $lead->customer->total_orders > 0)
+                                            <div class="d-flex align-items-center gap-2 ms-2" data-bs-toggle="tooltip" data-bs-html="true" title="Orders: {{ $lead->customer->total_orders }}<br>Delivered: {{ $lead->customer->total_delivered }}<br>Success: {{ round($lead->customer->delivery_success_rate) }}%<br>LTV: ₱{{ number_format($lead->customer->total_delivered_value, 2) }}">
+                                                <div class="progress bg-dark border border-white border-opacity-10" style="width: 50px; height: 6px;">
+                                                    @php
+                                                        $successRate = $lead->customer->delivery_success_rate;
+                                                        $progressClass = $successRate >= 80 ? 'success' : ($successRate >= 50 ? 'warning' : 'danger');
+                                                    @endphp
+                                                    <div class="progress-bar bg-{{ $progressClass }}" role="progressbar" style="width: {{ $successRate }}%"></div>
                                                 </div>
-                                                @if($lead->history['returned'] > 0)
+                                                <span class="text-white-50 x-small">{{ $lead->customer->total_orders }}</span>
+                                                @if($lead->customer->total_returned > 0)
                                                     <i class="fas fa-exclamation-triangle text-danger" style="font-size: 10px;"></i>
                                                 @endif
                                             </div>
@@ -1181,6 +1226,12 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
     const sidePanel = document.getElementById('updateSidePanel');
     const backdrop = document.getElementById('sidePanelBackdrop');
     const closeBtn = document.getElementById('closeSidePanel');
@@ -1438,58 +1489,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
             document.getElementById('panelPreviousItem').textContent = lead.previous_item || 'None';
             
-            // Populate System Order History (Orders + Waybills)
+            // Populate System Order History (Internal Orders Only)
             const historyContainer = document.getElementById('panelOrderHistory');
             if (historyContainer) {
-                let allHistory = [];
-                
-                // Add Orders
                 if (lead.orders && lead.orders.length > 0) {
-                    allHistory = allHistory.concat(lead.orders.map(o => ({
-                        type: 'Order',
-                        status: o.status,
-                        date: o.created_at,
-                        name: o.product_name,
-                        brand: o.product_brand,
-                        amount: o.amount,
-                        notes: o.notes
-                    })));
-                }
-
-                // Add Waybills (J&T History)
-                if (lead.phone_waybills && lead.phone_waybills.length > 0) {
-                    allHistory = allHistory.concat(lead.phone_waybills.map(w => ({
-                        type: 'Waybill',
-                        status: w.status,
-                        date: w.created_at, // or signing_time if available
-                        name: w.item_name || 'J&T Package',
-                        brand: 'J&T',
-                        amount: w.cod_amount,
-                        notes: w.remarks
-                    })));
-                }
-                
-                // Sort by Date Descending
-                allHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                if (allHistory.length > 0) {
-                    historyContainer.innerHTML = allHistory.map(item => `
+                    historyContainer.innerHTML = lead.orders.map(order => `
                         <div class="bg-dark bg-opacity-50 p-3 rounded-3 border border-white border-opacity-5 mb-2 shadow-sm hover-border-info transition-all">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div class="d-flex gap-2">
-                                    <span class="badge ${item.type === 'Waybill' ? 'bg-primary border-primary' : 'bg-success border-success'} bg-opacity-10 border-opacity-20 px-2 py-1 text-xs">${item.status}</span>
-                                    ${item.type === 'Waybill' ? '<span class="badge bg-secondary bg-opacity-10 text-white-50 border border-white border-opacity-10 text-xs">J&T</span>' : ''}
-                                </div>
-                                <span class="text-white-50 x-small font-monospace">${new Date(item.date).toLocaleDateString()}</span>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 px-2 py-1 text-xs">${order.status}</span>
+                                <span class="text-white-50 x-small font-monospace">${new Date(order.created_at).toLocaleDateString()}</span>
                             </div>
-                            <div class="text-white fw-bold small mb-1">${item.name || 'Unknown Item'}</div>
+                            <div class="text-white fw-bold small mb-1">${order.product_name}</div>
                             <div class="d-flex justify-content-between align-items-center x-small">
-                                <span class="text-white-50"><i class="fas fa-tag me-1"></i>${item.brand || 'No Brand'}</span>
-                                <span class="text-info fw-bold font-monospace">₱${item.amount || 0}</span>
+                                <span class="text-white-50"><i class="fas fa-tag me-1"></i>${order.product_brand || 'No Brand'}</span>
+                                <span class="text-info fw-bold font-monospace">₱${order.amount || 0}</span>
                             </div>
-                            ${item.notes ? `
+                            ${order.notes ? `
                                 <div class="mt-2 text-white-50 text-xs border-top border-white border-opacity-5 pt-2">
-                                    <i class="fas fa-comment-dots me-1 opacity-50"></i> "${item.notes}"
+                                    <i class="fas fa-comment-dots me-1 opacity-50"></i> "${order.notes}"
                                 </div>
                             ` : ''}
                         </div>
