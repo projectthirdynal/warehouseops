@@ -74,12 +74,12 @@
 </div>
 
 <!-- Reject Modal -->
-<div class="modal fade" id="rejectModal" tabindex="-1">
+<div class="modal fade" id="rejectModal" tabindex="-1" style="background: rgba(0,0,0,0.5);">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark text-white border-danger">
             <div class="modal-header border-secondary">
                 <h5 class="modal-title"><i class="fas fa-times-circle text-danger me-2"></i>Reject Sale</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" onclick="closeRejectModal()"></button>
             </div>
             <div class="modal-body">
                 <p class="text-secondary mb-3">Rejecting sale for: <strong class="text-white" id="reject-lead-name"></strong></p>
@@ -89,7 +89,7 @@
                 </div>
             </div>
             <div class="modal-footer border-secondary">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="closeRejectModal()">Cancel</button>
                 <button type="button" class="btn btn-danger" id="confirm-reject-btn"><i class="fas fa-ban me-1"></i>Confirm Reject</button>
             </div>
         </div>
@@ -277,7 +277,16 @@
         currentRejectLeadId = leadId;
         document.getElementById('reject-lead-name').innerText = name;
         document.getElementById('reject-notes').value = '';
-        new bootstrap.Modal(document.getElementById('rejectModal')).show();
+        // Show modal using classList
+        document.getElementById('rejectModal').classList.add('show');
+        document.getElementById('rejectModal').style.display = 'block';
+        document.body.classList.add('modal-open');
+    }
+
+    function closeRejectModal() {
+        document.getElementById('rejectModal').classList.remove('show');
+        document.getElementById('rejectModal').style.display = 'none';
+        document.body.classList.remove('modal-open');
     }
 
     document.getElementById('confirm-reject-btn').addEventListener('click', function() {
@@ -298,7 +307,7 @@
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
+                closeRejectModal();
                 updateDashboard();
             }
         });
