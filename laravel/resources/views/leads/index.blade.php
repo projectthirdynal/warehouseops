@@ -2185,19 +2185,37 @@ document.addEventListener('DOMContentLoaded', function() {
     const callBtns = document.querySelectorAll('.call-btn');
 
     // --- Call Button Handlers ---
-    callBtns.forEach(btn => {
-        btn.addEventListener('click', function(e) {
+    // --- Call Button Handlers (Event Delegation) ---
+    document.body.addEventListener('click', function(e) {
+        const btn = e.target.closest('.call-btn');
+        if (btn) {
+            e.preventDefault();
             e.stopPropagation();
-            const lead = JSON.parse(this.dataset.lead);
-            if (typeof window.callLead === 'function') {
-                window.callLead(lead);
-            } else {
-                // Fallback: copy to clipboard
-                navigator.clipboard.writeText(lead.phone).then(() => {
-                    alert('Phone copied: ' + lead.phone + '\nDial in MicroSIP');
-                });
+            
+            let lead;
+            try {
+                // Handle both data-lead object and data-phone string cases
+                if (btn.dataset.lead) {
+                    lead = typeof btn.dataset.lead === 'string' ? JSON.parse(btn.dataset.lead) : btn.dataset.lead;
+                } else if (btn.dataset.phone) {
+                    lead = { phone: btn.dataset.phone, name: 'Unknown' };
+                }
+            } catch (err) {
+                console.error('Invalid lead data', err);
+                return;
             }
-        });
+
+            if (lead && lead.phone) {
+                if (typeof window.callLead === 'function') {
+                    window.callLead(lead);
+                } else {
+                    // Fallback
+                    navigator.clipboard.writeText(lead.phone).then(() => {
+                        alert('Softphone not ready.\nPhone copied: ' + lead.phone);
+                    });
+                }
+            }
+        }
     });
 
     function openPanel() {
