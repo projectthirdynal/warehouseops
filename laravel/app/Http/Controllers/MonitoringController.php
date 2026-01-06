@@ -88,7 +88,7 @@ class MonitoringController extends Controller
      */
     public function salesQueue()
     {
-        $leads = Lead::with(['user', 'qcUser'])
+        $leads = Lead::with(['assignedAgent', 'checker'])
             ->where('status', Lead::STATUS_SALE)
             ->where('qc_status', Lead::QC_STATUS_PENDING)
             ->orderBy('updated_at', 'desc')
@@ -96,8 +96,8 @@ class MonitoringController extends Controller
             ->map(function ($lead) {
                 return [
                     'id' => $lead->id,
-                    'agent' => $lead->user?->name ?? 'Unknown',
-                    'agent_avatar' => substr($lead->user?->name ?? '?', 0, 2),
+                    'agent' => $lead->assignedAgent?->name ?? 'Unknown',
+                    'agent_avatar' => substr($lead->assignedAgent?->name ?? '?', 0, 2),
                     'customer' => $lead->name,
                     'phone' => $lead->phone,
                     'product' => $lead->product_name,
