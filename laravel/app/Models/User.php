@@ -17,12 +17,14 @@ class User extends Authenticatable
     const ROLE_ADMIN = 'admin';
     const ROLE_OPERATOR = 'operator';
     const ROLE_AGENT = 'agent';
+    const ROLE_CHECKER = 'checker';
 
     const PERMISSIONS = [
-        self::ROLE_SUPERADMIN => ['dashboard', 'scanner', 'pending', 'upload', 'accounts', 'settings', 'users', 'leads_view', 'leads_manage', 'leads_create'],
-        self::ROLE_ADMIN => ['dashboard', 'scanner', 'pending', 'upload', 'accounts', 'settings', 'leads_view', 'leads_manage', 'users', 'leads_create'],
+        self::ROLE_SUPERADMIN => ['dashboard', 'scanner', 'pending', 'upload', 'accounts', 'settings', 'users', 'leads_view', 'leads_manage', 'leads_create', 'monitoring', 'qc'],
+        self::ROLE_ADMIN => ['dashboard', 'scanner', 'pending', 'upload', 'accounts', 'settings', 'leads_view', 'leads_manage', 'users', 'leads_create', 'monitoring', 'qc'],
         self::ROLE_OPERATOR => ['dashboard', 'scanner', 'pending', 'upload', 'accounts'],
         self::ROLE_AGENT => ['accounts', 'leads_view'],
+        self::ROLE_CHECKER => ['leads_view', 'monitoring', 'qc'],
     ];
 
     protected $fillable = [
@@ -154,7 +156,7 @@ class User extends Authenticatable
 
     public function isChecker(): bool
     {
-        return $this->role === 'checker';
+        return $this->role === self::ROLE_CHECKER;
     }
 
     /**
@@ -176,6 +178,7 @@ class User extends Authenticatable
             self::ROLE_ADMIN => 'Admin',
             self::ROLE_OPERATOR => 'Operator',
             self::ROLE_AGENT => 'Agent',
+            self::ROLE_CHECKER => 'Checker',
         ];
     }
 

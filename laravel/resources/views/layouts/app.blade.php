@@ -455,6 +455,13 @@
                 </a>
                 @endif
 
+                @if(auth()->user()->canAccess('qc'))
+                <a href="{{ route('monitoring.index') }}" class="nav-item {{ request()->routeIs('monitoring.*') ? 'active' : '' }}">
+                    <i class="fas fa-clipboard-check"></i>
+                    <span>QC Dashboard</span>
+                </a>
+                @endif
+
                 <div class="nav-divider"></div>
                 <div class="nav-section-title">System</div>
 
