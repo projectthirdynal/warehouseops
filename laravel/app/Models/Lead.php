@@ -17,8 +17,8 @@ class Lead extends Model
     const STATUS_REORDER = 'REORDER';
     const STATUS_DELIVERED = 'DELIVERED';
     const STATUS_RETURNED = 'RETURNED';
-    const STATUS_REJECTED = 'Rejected'; // Generic rejection
-    const STATUS_CANCELLED = 'Cancelled'; // Order Cancelled
+    const STATUS_REJECTED = 'REJECTED'; // Generic rejection (QC Failed / False Sale)
+    const STATUS_CANCELLED = 'CANCELLED'; // Order Cancelled
     const STATUS_ARCHIVED = 'ARCHIVED';
 
     // QC Status Constants
