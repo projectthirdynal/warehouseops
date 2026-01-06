@@ -96,6 +96,7 @@ class MonitoringController extends Controller
             ->map(function ($lead) {
                 return [
                     'id' => $lead->id,
+                    'agent_id' => $lead->assigned_to,
                     'agent' => $lead->assignedAgent?->name ?? 'Unknown',
                     'agent_avatar' => substr($lead->assignedAgent?->name ?? '?', 0, 2),
                     'customer' => $lead->name,
