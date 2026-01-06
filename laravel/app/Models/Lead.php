@@ -57,7 +57,12 @@ class Lead extends Model
         'max_cycles',
         'is_exhausted',
         'quality_score',
-        'last_scored_at'
+        'last_scored_at',
+        // QC Fields
+        'qc_status',
+        'qc_by',
+        'qc_at',
+        'qc_notes',
     ];
 
     protected $casts = [
