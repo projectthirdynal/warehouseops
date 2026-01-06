@@ -193,9 +193,14 @@
                         <div class="sp-number-display" id="sp-active-number">...</div>
                         <div class="sp-manual-hint" id="sp-manual-hint">Dial this number on MicroSIP</div>
                         <div class="sp-timer" id="sp-timer">00:00</div>
-                        <div class="sp-controls">
-                            <button class="sp-ctrl-btn sp-btn-mute" id="sp-btn-mute"><i class="fas fa-microphone"></i></button>
-                            <button class="sp-ctrl-btn sp-btn-hangup" id="sp-btn-hangup"><i class="fas fa-phone-slash"></i></button>
+                        
+                        <!-- In-Call Controls -->
+                        <div class="sp-controls mb-3">
+                            <button class="sp-ctrl-btn sp-btn-mute" id="sp-btn-mute" title="Mute/Unmute"><i class="fas fa-microphone"></i></button>
+                            <button class="sp-ctrl-btn sp-btn-hold" id="sp-btn-hold" title="Hold/Resume"><i class="fas fa-pause"></i></button>
+                            <button class="sp-ctrl-btn sp-btn-transfer" id="sp-btn-transfer" title="Transfer"><i class="fas fa-exchange-alt"></i></button>
+                            <button class="sp-ctrl-btn sp-btn-keypad" id="sp-btn-keypad" title="Show Keypad"><i class="fas fa-th"></i></button>
+                            <button class="sp-ctrl-btn sp-btn-hangup" id="sp-btn-hangup" title="End Call"><i class="fas fa-phone-slash"></i></button>
                         </div>
                     </div>
                 </div>
@@ -211,15 +216,34 @@
     document.getElementById('sp-btn-dial').onclick = () => startCall(document.getElementById('sp-number-input').value);
     document.getElementById('sp-btn-hangup').onclick = endCall;
 
+    // Control Events
+    document.getElementById('sp-btn-mute').onclick = toggleMute;
+    document.getElementById('sp-btn-hold').onclick = toggleHold;
+    document.getElementById('sp-btn-transfer').onclick = transferCall;
+    document.getElementById('sp-btn-keypad').onclick = () => {
+        document.getElementById('sp-incall-ui').style.display = 'none';
+        document.getElementById('sp-dialpad-ui').style.display = 'block';
+    };
+
     document.querySelectorAll('.sp-key').forEach(btn => {
-        btn.onclick = () => document.getElementById('sp-number-input').value += btn.innerText;
+        btn.onclick = () => {
+            const key = btn.innerText;
+            if (session && mode === 'webrtc' && session.state === SIP.SessionState.Established) {
+                // In-Call DTMF
+                const options = { transportType: 'RFC2833' }; // Try RFC2833 first
+                session.dtmf(key, options);
+            } else {
+                // Dialpad Input
+                document.getElementById('sp-number-input').value += key;
+            }
+        };
     });
 
     if (mode === 'manual') {
         updateStatus('Manual Mode', 'manual');
         document.getElementById('sp-info-text').innerText = 'WebRTC Disabled (HTTPS required). Using Manual Logging.';
         document.getElementById('sp-manual-hint').style.display = 'block';
-        document.getElementById('sp-keypad').style.display = 'none'; // No keys needed for manual
+        document.getElementById('sp-keypad').style.display = 'none';
     }
 
     // Expose global
@@ -228,6 +252,77 @@
         document.getElementById('sp-number-input').value = lead.phone;
         startCall(lead.phone);
     };
+}
+
+let isMuted = false;
+let isHeld = false;
+
+function toggleMute() {
+    if (!session || mode !== 'webrtc') return;
+
+    // Find audio sender track
+    const senders = session.sessionDescriptionHandler.peerConnection.getSenders();
+    const sender = senders.find(s => s.track && s.track.kind === 'audio');
+
+    if (sender && sender.track) {
+        isMuted = !isMuted;
+        sender.track.enabled = !isMuted;
+
+        const btn = document.getElementById('sp-btn-mute');
+        if (isMuted) {
+            btn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+            btn.style.background = '#f59e0b'; // Orange
+        } else {
+            btn.innerHTML = '<i class="fas fa-microphone"></i>';
+            btn.style.background = 'rgba(255,255,255,0.1)';
+        }
+    }
+}
+
+function toggleHold() {
+    if (!session || mode !== 'webrtc') return;
+
+    isHeld = !isHeld;
+    const btn = document.getElementById('sp-btn-hold');
+
+    // SIP.js 0.20+ Re-INVITE for Hold
+    const modifiers = [];
+    if (isHeld) {
+        modifiers.push(SIP.Web.SessionDescriptionHandler.holdModifier);
+        btn.innerHTML = '<i class="fas fa-play"></i>';
+        btn.style.background = '#f59e0b';
+    } else {
+        // Resume (empty modifiers usually implies strict/sendrecv depending heavily on browser/impl, 
+        // but passing empty array often resets to default media direction)
+        btn.innerHTML = '<i class="fas fa-pause"></i>';
+        btn.style.background = 'rgba(255,255,255,0.1)';
+    }
+
+    const options = {
+        sessionDescriptionHandlerModifiers: modifiers
+    };
+
+    session.invite(options).catch(e => {
+        console.error('Hold toggle failed:', e);
+        isHeld = !isHeld; // Revert UI if failed
+    });
+}
+
+function transferCall() {
+    if (!session || mode !== 'webrtc') return;
+
+    const target = prompt("Enter number to transfer to:");
+    if (target) {
+        // SIP REFER
+        const targetURI = SIP.UserAgent.makeURI('sip:' + target + '@' + window.location.hostname);
+        session.refer(targetURI).then(() => {
+            alert('Transfer initiated.');
+            endCall();
+        }).catch(e => {
+            console.error('Transfer failed', e);
+            alert('Transfer failed: ' + e);
+        });
+    }
 }
 
 function setupSIP() {
@@ -260,18 +355,20 @@ function setupSIP() {
 function startCall(number) {
     if (!number) return;
     currentCall = { number: number };
+    isMuted = false;
+    isHeld = false;
 
     showInCallUI(number);
-    startTimer(); // Start timer immediately for UX
+    startTimer();
 
     if (mode === 'webrtc' && isRegistered) {
-        // SIP Logic
         const target = SIP.UserAgent.makeURI('sip:' + number + '@' + window.location.hostname);
-        const options = { sessionDescriptionHandlerOptions: { constraints: { audio: true, video: false } } };
+        const options = {
+            sessionDescriptionHandlerOptions: { constraints: { audio: true, video: false } }
+        };
         session = userAgent.invite(target, options);
         setupSession(session);
     } else {
-        // Manual Logic
         copyToClipboard(number);
         console.log('Manual mode: Copied ' + number);
     }
@@ -295,13 +392,16 @@ function setupSession(newSession) {
 
 function endCall() {
     if (session && mode === 'webrtc') {
-        session.bye();
+        if (session.state !== SIP.SessionState.Terminated) {
+            session.bye();
+        }
         session = null;
     }
 
     stopTimer();
     showDialpadUI();
-    // Here we could prompt for outcome
+    isMuted = false;
+    isHeld = false;
 }
 
 function showInCallUI(number) {
@@ -309,6 +409,12 @@ function showInCallUI(number) {
     document.getElementById('sp-dialpad-ui').style.display = 'none';
     document.getElementById('sp-incall-ui').classList.add('active');
     document.getElementById('sp-active-number').innerText = number;
+
+    // Reset buttons
+    document.getElementById('sp-btn-mute').innerHTML = '<i class="fas fa-microphone"></i>';
+    document.getElementById('sp-btn-mute').style.background = 'rgba(255,255,255,0.1)';
+    document.getElementById('sp-btn-hold').innerHTML = '<i class="fas fa-pause"></i>';
+    document.getElementById('sp-btn-hold').style.background = 'rgba(255,255,255,0.1)';
 }
 
 function showDialpadUI() {
@@ -360,7 +466,6 @@ function copyToClipboard(text) {
         document.body.removeChild(el);
     }
 }
-    }
 
 function startHeartbeat() {
     setInterval(() => {
@@ -377,4 +482,5 @@ function startHeartbeat() {
         }).catch(e => console.error('Heartbeat failed', e));
     }, 30000); // 30 seconds
 }
+
 }) ();
