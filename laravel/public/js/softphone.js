@@ -72,14 +72,13 @@
             }
         }
     }
-}
 
     function initWidget() {
-    if (document.getElementById('softphone-widget')) return;
+        if (document.getElementById('softphone-widget')) return;
 
-    const widget = document.createElement('div');
-    widget.id = 'softphone-widget';
-    widget.innerHTML = `
+        const widget = document.createElement('div');
+        widget.id = 'softphone-widget';
+        widget.innerHTML = `
             <style>
                 #softphone-widget {
                     position: fixed;
@@ -208,279 +207,279 @@
             
             <audio id="sp-remote-audio" autoplay></audio>
         `;
-    document.body.appendChild(widget);
+        document.body.appendChild(widget);
 
-    // Events
-    document.getElementById('sp-fab').onclick = () => document.getElementById('sp-panel').classList.toggle('open');
-    document.getElementById('sp-close').onclick = () => document.getElementById('sp-panel').classList.remove('open');
-    document.getElementById('sp-btn-dial').onclick = () => startCall(document.getElementById('sp-number-input').value);
-    document.getElementById('sp-btn-hangup').onclick = endCall;
+        // Events
+        document.getElementById('sp-fab').onclick = () => document.getElementById('sp-panel').classList.toggle('open');
+        document.getElementById('sp-close').onclick = () => document.getElementById('sp-panel').classList.remove('open');
+        document.getElementById('sp-btn-dial').onclick = () => startCall(document.getElementById('sp-number-input').value);
+        document.getElementById('sp-btn-hangup').onclick = endCall;
 
-    // Control Events
-    document.getElementById('sp-btn-mute').onclick = toggleMute;
-    document.getElementById('sp-btn-hold').onclick = toggleHold;
-    document.getElementById('sp-btn-transfer').onclick = transferCall;
-    document.getElementById('sp-btn-keypad').onclick = () => {
-        document.getElementById('sp-incall-ui').style.display = 'none';
-        document.getElementById('sp-dialpad-ui').style.display = 'block';
-    };
-
-    document.querySelectorAll('.sp-key').forEach(btn => {
-        btn.onclick = () => {
-            const key = btn.innerText;
-            if (session && mode === 'webrtc' && session.state === SIP.SessionState.Established) {
-                // In-Call DTMF
-                const options = { transportType: 'RFC2833' }; // Try RFC2833 first
-                session.dtmf(key, options);
-            } else {
-                // Dialpad Input
-                document.getElementById('sp-number-input').value += key;
-            }
+        // Control Events
+        document.getElementById('sp-btn-mute').onclick = toggleMute;
+        document.getElementById('sp-btn-hold').onclick = toggleHold;
+        document.getElementById('sp-btn-transfer').onclick = transferCall;
+        document.getElementById('sp-btn-keypad').onclick = () => {
+            document.getElementById('sp-incall-ui').style.display = 'none';
+            document.getElementById('sp-dialpad-ui').style.display = 'block';
         };
-    });
 
-    if (mode === 'manual') {
-        updateStatus('Manual Mode', 'manual');
-        document.getElementById('sp-info-text').innerText = 'WebRTC Disabled (HTTPS required). Using Manual Logging.';
-        document.getElementById('sp-manual-hint').style.display = 'block';
-        document.getElementById('sp-keypad').style.display = 'none';
+        document.querySelectorAll('.sp-key').forEach(btn => {
+            btn.onclick = () => {
+                const key = btn.innerText;
+                if (session && mode === 'webrtc' && session.state === SIP.SessionState.Established) {
+                    // In-Call DTMF
+                    const options = { transportType: 'RFC2833' }; // Try RFC2833 first
+                    session.dtmf(key, options);
+                } else {
+                    // Dialpad Input
+                    document.getElementById('sp-number-input').value += key;
+                }
+            };
+        });
+
+        if (mode === 'manual') {
+            updateStatus('Manual Mode', 'manual');
+            document.getElementById('sp-info-text').innerText = 'WebRTC Disabled (HTTPS required). Using Manual Logging.';
+            document.getElementById('sp-manual-hint').style.display = 'block';
+            document.getElementById('sp-keypad').style.display = 'none';
+        }
+
+        // Expose global
+        window.callLead = function (lead) {
+            document.getElementById('sp-panel').classList.add('open');
+            document.getElementById('sp-number-input').value = lead.phone;
+            startCall(lead.phone);
+        };
     }
 
-    // Expose global
-    window.callLead = function (lead) {
-        document.getElementById('sp-panel').classList.add('open');
-        document.getElementById('sp-number-input').value = lead.phone;
-        startCall(lead.phone);
-    };
-}
+    let isMuted = false;
+    let isHeld = false;
 
-let isMuted = false;
-let isHeld = false;
+    function toggleMute() {
+        if (!session || mode !== 'webrtc') return;
 
-function toggleMute() {
-    if (!session || mode !== 'webrtc') return;
+        // Find audio sender track
+        const senders = session.sessionDescriptionHandler.peerConnection.getSenders();
+        const sender = senders.find(s => s.track && s.track.kind === 'audio');
 
-    // Find audio sender track
-    const senders = session.sessionDescriptionHandler.peerConnection.getSenders();
-    const sender = senders.find(s => s.track && s.track.kind === 'audio');
+        if (sender && sender.track) {
+            isMuted = !isMuted;
+            sender.track.enabled = !isMuted;
 
-    if (sender && sender.track) {
-        isMuted = !isMuted;
-        sender.track.enabled = !isMuted;
+            const btn = document.getElementById('sp-btn-mute');
+            if (isMuted) {
+                btn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                btn.style.background = '#f59e0b'; // Orange
+            } else {
+                btn.innerHTML = '<i class="fas fa-microphone"></i>';
+                btn.style.background = 'rgba(255,255,255,0.1)';
+            }
+        }
+    }
 
-        const btn = document.getElementById('sp-btn-mute');
-        if (isMuted) {
-            btn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
-            btn.style.background = '#f59e0b'; // Orange
+    function toggleHold() {
+        if (!session || mode !== 'webrtc') return;
+
+        isHeld = !isHeld;
+        const btn = document.getElementById('sp-btn-hold');
+
+        // SIP.js 0.20+ Re-INVITE for Hold
+        const modifiers = [];
+        if (isHeld) {
+            modifiers.push(SIP.Web.SessionDescriptionHandler.holdModifier);
+            btn.innerHTML = '<i class="fas fa-play"></i>';
+            btn.style.background = '#f59e0b';
         } else {
-            btn.innerHTML = '<i class="fas fa-microphone"></i>';
+            // Resume (empty modifiers usually implies strict/sendrecv depending heavily on browser/impl, 
+            // but passing empty array often resets to default media direction)
+            btn.innerHTML = '<i class="fas fa-pause"></i>';
             btn.style.background = 'rgba(255,255,255,0.1)';
         }
-    }
-}
 
-function toggleHold() {
-    if (!session || mode !== 'webrtc') return;
-
-    isHeld = !isHeld;
-    const btn = document.getElementById('sp-btn-hold');
-
-    // SIP.js 0.20+ Re-INVITE for Hold
-    const modifiers = [];
-    if (isHeld) {
-        modifiers.push(SIP.Web.SessionDescriptionHandler.holdModifier);
-        btn.innerHTML = '<i class="fas fa-play"></i>';
-        btn.style.background = '#f59e0b';
-    } else {
-        // Resume (empty modifiers usually implies strict/sendrecv depending heavily on browser/impl, 
-        // but passing empty array often resets to default media direction)
-        btn.innerHTML = '<i class="fas fa-pause"></i>';
-        btn.style.background = 'rgba(255,255,255,0.1)';
-    }
-
-    const options = {
-        sessionDescriptionHandlerModifiers: modifiers
-    };
-
-    session.invite(options).catch(e => {
-        console.error('Hold toggle failed:', e);
-        isHeld = !isHeld; // Revert UI if failed
-    });
-}
-
-function transferCall() {
-    if (!session || mode !== 'webrtc') return;
-
-    const target = prompt("Enter number to transfer to:");
-    if (target) {
-        // SIP REFER
-        const targetURI = SIP.UserAgent.makeURI('sip:' + target + '@' + window.location.hostname);
-        session.refer(targetURI).then(() => {
-            alert('Transfer initiated.');
-            endCall();
-        }).catch(e => {
-            console.error('Transfer failed', e);
-            alert('Transfer failed: ' + e);
-        });
-    }
-}
-
-function setupSIP() {
-    updateStatus('Connecting SIP...', false);
-    try {
-        userAgent = new SIP.UserAgent({
-            uri: SIP.UserAgent.makeURI(SIP_CONFIG.uri),
-            transportOptions: { server: SIP_CONFIG.wsServers[0] },
-            authorizationUsername: SIP_CONFIG.authorizationUser,
-            authorizationPassword: SIP_CONFIG.password,
-            displayName: SIP_CONFIG.displayName,
-            register: true
-        });
-
-        userAgent.start().then(() => {
-            isRegistered = true;
-            updateStatus('Online (' + sipUser + ')', true);
-        }).catch(err => {
-            console.error('SIP Connect Error:', err);
-            updateStatus('SIP Error - Local Mode', 'manual');
-            mode = 'manual';
-        });
-    } catch (e) {
-        console.error('SIP Init Error:', e);
-        updateStatus('SIP Failed', 'manual');
-        mode = 'manual';
-    }
-}
-
-function startCall(number) {
-    if (!number) return;
-    currentCall = { number: number };
-    isMuted = false;
-    isHeld = false;
-
-    showInCallUI(number);
-    startTimer();
-
-    if (mode === 'webrtc' && isRegistered) {
-        const target = SIP.UserAgent.makeURI('sip:' + number + '@' + window.location.hostname);
         const options = {
-            sessionDescriptionHandlerOptions: { constraints: { audio: true, video: false } }
+            sessionDescriptionHandlerModifiers: modifiers
         };
-        session = userAgent.invite(target, options);
-        setupSession(session);
-    } else {
-        copyToClipboard(number);
-        console.log('Manual mode: Copied ' + number);
-    }
-}
 
-function setupSession(newSession) {
-    session = newSession;
-    session.stateChange.addListener((state) => {
-        if (state === SIP.SessionState.Terminated) {
-            endCall();
-        } else if (state === SIP.SessionState.Established) {
-            const remoteStream = new MediaStream();
-            session.sessionDescriptionHandler.peerConnection.getReceivers().forEach((receiver) => {
-                if (receiver.track) remoteStream.addTrack(receiver.track);
+        session.invite(options).catch(e => {
+            console.error('Hold toggle failed:', e);
+            isHeld = !isHeld; // Revert UI if failed
+        });
+    }
+
+    function transferCall() {
+        if (!session || mode !== 'webrtc') return;
+
+        const target = prompt("Enter number to transfer to:");
+        if (target) {
+            // SIP REFER
+            const targetURI = SIP.UserAgent.makeURI('sip:' + target + '@' + window.location.hostname);
+            session.refer(targetURI).then(() => {
+                alert('Transfer initiated.');
+                endCall();
+            }).catch(e => {
+                console.error('Transfer failed', e);
+                alert('Transfer failed: ' + e);
             });
-            document.getElementById('sp-remote-audio').srcObject = remoteStream;
-            document.getElementById('sp-remote-audio').play();
         }
-    });
-}
+    }
 
-function endCall() {
-    if (session && mode === 'webrtc') {
-        if (session.state !== SIP.SessionState.Terminated) {
-            session.bye();
+    function setupSIP() {
+        updateStatus('Connecting SIP...', false);
+        try {
+            userAgent = new SIP.UserAgent({
+                uri: SIP.UserAgent.makeURI(SIP_CONFIG.uri),
+                transportOptions: { server: SIP_CONFIG.wsServers[0] },
+                authorizationUsername: SIP_CONFIG.authorizationUser,
+                authorizationPassword: SIP_CONFIG.password,
+                displayName: SIP_CONFIG.displayName,
+                register: true
+            });
+
+            userAgent.start().then(() => {
+                isRegistered = true;
+                updateStatus('Online (' + sipUser + ')', true);
+            }).catch(err => {
+                console.error('SIP Connect Error:', err);
+                updateStatus('SIP Error - Local Mode', 'manual');
+                mode = 'manual';
+            });
+        } catch (e) {
+            console.error('SIP Init Error:', e);
+            updateStatus('SIP Failed', 'manual');
+            mode = 'manual';
         }
-        session = null;
     }
 
-    stopTimer();
-    showDialpadUI();
-    isMuted = false;
-    isHeld = false;
-}
+    function startCall(number) {
+        if (!number) return;
+        currentCall = { number: number };
+        isMuted = false;
+        isHeld = false;
 
-function showInCallUI(number) {
-    document.getElementById('sp-fab').classList.add('incall');
-    document.getElementById('sp-dialpad-ui').style.display = 'none';
-    document.getElementById('sp-incall-ui').classList.add('active');
-    document.getElementById('sp-active-number').innerText = number;
+        showInCallUI(number);
+        startTimer();
 
-    // Reset buttons
-    document.getElementById('sp-btn-mute').innerHTML = '<i class="fas fa-microphone"></i>';
-    document.getElementById('sp-btn-mute').style.background = 'rgba(255,255,255,0.1)';
-    document.getElementById('sp-btn-hold').innerHTML = '<i class="fas fa-pause"></i>';
-    document.getElementById('sp-btn-hold').style.background = 'rgba(255,255,255,0.1)';
-}
-
-function showDialpadUI() {
-    document.getElementById('sp-fab').classList.remove('incall');
-    document.getElementById('sp-incall-ui').classList.remove('active');
-    document.getElementById('sp-dialpad-ui').style.display = 'block';
-}
-
-function updateStatus(text, type) {
-    document.getElementById('sp-status-text').innerText = text;
-    const dot = document.getElementById('sp-dot');
-    dot.className = 'sp-status-dot';
-    document.getElementById('sp-fab').className = 'sp-fab';
-
-    if (type === true) {
-        dot.classList.add('connected');
-        document.getElementById('sp-fab').classList.add('online');
-    } else if (type === 'manual') {
-        dot.classList.add('manual');
-        document.getElementById('sp-fab').classList.add('manual');
+        if (mode === 'webrtc' && isRegistered) {
+            const target = SIP.UserAgent.makeURI('sip:' + number + '@' + window.location.hostname);
+            const options = {
+                sessionDescriptionHandlerOptions: { constraints: { audio: true, video: false } }
+            };
+            session = userAgent.invite(target, options);
+            setupSession(session);
+        } else {
+            copyToClipboard(number);
+            console.log('Manual mode: Copied ' + number);
+        }
     }
-}
 
-function startTimer() {
-    if (callTimer) clearInterval(callTimer);
-    callStartTime = Date.now();
-    callTimer = setInterval(() => {
-        const delta = Math.floor((Date.now() - callStartTime) / 1000);
-        const m = Math.floor(delta / 60).toString().padStart(2, '0');
-        const s = (delta % 60).toString().padStart(2, '0');
-        document.getElementById('sp-timer').innerText = `${m}:${s}`;
-    }, 1000);
-}
-
-function stopTimer() {
-    if (callTimer) clearInterval(callTimer);
-    callTimer = null;
-}
-
-function copyToClipboard(text) {
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(text);
-    } else {
-        const el = document.createElement('textarea');
-        el.value = text;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
+    function setupSession(newSession) {
+        session = newSession;
+        session.stateChange.addListener((state) => {
+            if (state === SIP.SessionState.Terminated) {
+                endCall();
+            } else if (state === SIP.SessionState.Established) {
+                const remoteStream = new MediaStream();
+                session.sessionDescriptionHandler.peerConnection.getReceivers().forEach((receiver) => {
+                    if (receiver.track) remoteStream.addTrack(receiver.track);
+                });
+                document.getElementById('sp-remote-audio').srcObject = remoteStream;
+                document.getElementById('sp-remote-audio').play();
+            }
+        });
     }
-}
 
-function startHeartbeat() {
-    setInterval(() => {
-        const status = currentCall ? 'busy' : 'online';
-        const lead = currentCall ? (currentCall.name || currentCall.number) : null;
+    function endCall() {
+        if (session && mode === 'webrtc') {
+            if (session.state !== SIP.SessionState.Terminated) {
+                session.bye();
+            }
+            session = null;
+        }
 
-        fetch('/monitoring/heartbeat', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.head.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify({ status, lead })
-        }).catch(e => console.error('Heartbeat failed', e));
-    }, 30000); // 30 seconds
-}
+        stopTimer();
+        showDialpadUI();
+        isMuted = false;
+        isHeld = false;
+    }
 
-}) ();
+    function showInCallUI(number) {
+        document.getElementById('sp-fab').classList.add('incall');
+        document.getElementById('sp-dialpad-ui').style.display = 'none';
+        document.getElementById('sp-incall-ui').classList.add('active');
+        document.getElementById('sp-active-number').innerText = number;
+
+        // Reset buttons
+        document.getElementById('sp-btn-mute').innerHTML = '<i class="fas fa-microphone"></i>';
+        document.getElementById('sp-btn-mute').style.background = 'rgba(255,255,255,0.1)';
+        document.getElementById('sp-btn-hold').innerHTML = '<i class="fas fa-pause"></i>';
+        document.getElementById('sp-btn-hold').style.background = 'rgba(255,255,255,0.1)';
+    }
+
+    function showDialpadUI() {
+        document.getElementById('sp-fab').classList.remove('incall');
+        document.getElementById('sp-incall-ui').classList.remove('active');
+        document.getElementById('sp-dialpad-ui').style.display = 'block';
+    }
+
+    function updateStatus(text, type) {
+        document.getElementById('sp-status-text').innerText = text;
+        const dot = document.getElementById('sp-dot');
+        dot.className = 'sp-status-dot';
+        document.getElementById('sp-fab').className = 'sp-fab';
+
+        if (type === true) {
+            dot.classList.add('connected');
+            document.getElementById('sp-fab').classList.add('online');
+        } else if (type === 'manual') {
+            dot.classList.add('manual');
+            document.getElementById('sp-fab').classList.add('manual');
+        }
+    }
+
+    function startTimer() {
+        if (callTimer) clearInterval(callTimer);
+        callStartTime = Date.now();
+        callTimer = setInterval(() => {
+            const delta = Math.floor((Date.now() - callStartTime) / 1000);
+            const m = Math.floor(delta / 60).toString().padStart(2, '0');
+            const s = (delta % 60).toString().padStart(2, '0');
+            document.getElementById('sp-timer').innerText = `${m}:${s}`;
+        }, 1000);
+    }
+
+    function stopTimer() {
+        if (callTimer) clearInterval(callTimer);
+        callTimer = null;
+    }
+
+    function copyToClipboard(text) {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text);
+        } else {
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+        }
+    }
+
+    function startHeartbeat() {
+        setInterval(() => {
+            const status = currentCall ? 'busy' : 'online';
+            const lead = currentCall ? (currentCall.name || currentCall.number) : null;
+
+            fetch('/monitoring/heartbeat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.head.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ status, lead })
+            }).catch(e => console.error('Heartbeat failed', e));
+        }, 30000); // 30 seconds
+    }
+
+})();
