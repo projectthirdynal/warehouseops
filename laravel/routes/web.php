@@ -15,6 +15,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\LeadReportController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\MonitoringController;
 
 // Authentication routes (public)
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
