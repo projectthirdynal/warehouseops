@@ -171,10 +171,15 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-    // Monitoring
+    // Monitoring & QC
     Route::middleware(['auth'])->group(function () {
         Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring.index');
         Route::get('/monitoring/stats', [MonitoringController::class, 'getStats'])->name('monitoring.stats');
         Route::post('/monitoring/heartbeat', [MonitoringController::class, 'heartbeat'])->name('monitoring.heartbeat');
+        
+        // QC Actions (Checkers)
+        Route::get('/monitoring/sales-queue', [MonitoringController::class, 'salesQueue'])->name('monitoring.salesQueue');
+        Route::post('/monitoring/{lead}/approve', [MonitoringController::class, 'approveQc'])->name('monitoring.approve');
+        Route::post('/monitoring/{lead}/reject', [MonitoringController::class, 'rejectQc'])->name('monitoring.reject');
     });
 });
