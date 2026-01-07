@@ -1,6 +1,6 @@
 # Project Exclusions
-vendor/
-node_modules/
+/vendor/
+/node_modules/
 *.log
 .DS_Store
 Thumbs.db
@@ -29,27 +29,33 @@ CLAUDE.md
 .idea/
 .vscode/
 
-# Legacy Files
-index.php
-scan.php
-scanner.php
-upload.php
-upload-page.php
-upload-batch.php
-upload-batch-page.php
-waybills.php
-setup.sh
-inventory_system_implementation_prompt.md
-sa.xls
-sample.xlsx
-waybill_deploy.tar.gz
-base addresses map.xlsx
-Untitled 1.ods
-api/
-assets/
-components/
-includes/
-styles/
-database/batch_ready.sql
-database/batch_scanning.sql
-database/schema.sql
+# Legacy Files (at root level only - use / prefix to anchor to root)
+/index.php
+/scan.php
+/scanner.php
+/upload.php
+/upload-page.php
+/upload-batch.php
+/upload-batch-page.php
+/waybills.php
+/setup.sh
+/inventory_system_implementation_prompt.md
+/sa.xls
+/sample.xlsx
+/waybill_deploy.tar.gz
+/base addresses map.xlsx
+/Untitled 1.ods
+/api/
+/assets/
+/components/
+/includes/
+/styles/
+/database/batch_ready.sql
+/database/batch_scanning.sql
+/database/schema.sql
+/generate_pjsip.php
+/CP88017.xlsx
+
+# Laravel vendor & node_modules (inside laravel dir)
+laravel/vendor/
+laravel/node_modules/
