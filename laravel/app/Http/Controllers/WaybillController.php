@@ -61,4 +61,12 @@ class WaybillController extends Controller
 
         return view('waybills', compact('waybills', 'stats', 'productOptions'));
     }
+
+    /**
+     * Display print-ready shipping label for a waybill.
+     */
+    public function printLabel(Waybill $waybill)
+    {
+        return view('waybills.print-label', compact('waybill'));
+    }
 }

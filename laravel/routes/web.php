@@ -65,6 +65,7 @@ Route::middleware(['auth'])->group(function () {
     // Accounts/Waybills - requires accounts permission
     Route::middleware(['role:accounts'])->group(function () {
         Route::get('/waybills', [WaybillController::class, 'index'])->name('waybills');
+        Route::get('/waybills/{waybill}/print', [WaybillController::class, 'printLabel'])->name('waybills.print');
     });
     
     // Settings - requires settings permission
@@ -80,6 +81,14 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/settings/users/{id}', [SettingsController::class, 'updateUser'])->name('settings.users.update');
         Route::delete('/settings/users/{id}', [SettingsController::class, 'deleteUser'])->name('settings.users.delete');
     });
+
+    // Courier Settings - requires settings permission
+    Route::middleware(['role:settings'])->group(function () {
+        Route::get('/settings/couriers', [App\Http\Controllers\CourierSettingsController::class, 'index'])->name('settings.couriers');
+        Route::patch('/settings/couriers/{provider}', [App\Http\Controllers\CourierSettingsController::class, 'update'])->name('settings.couriers.update');
+        Route::post('/settings/couriers/{provider}/toggle', [App\Http\Controllers\CourierSettingsController::class, 'toggle'])->name('settings.couriers.toggle');
+        Route::post('/settings/couriers/{provider}/test', [App\Http\Controllers\CourierSettingsController::class, 'testConnection'])->name('settings.couriers.test');
+    });
     
     // Notifications - accessible by all
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -89,13 +98,14 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('leads', LeadController::class);
     Route::post('leads/check-duplicates', [LeadController::class, 'checkDuplicates'])->name('leads.check-duplicates');
     
-    // QC / Checker Workflow
-    Route::prefix('qc')->name('qc.')->group(function () {
-        Route::get('/dashboard', [QcController::class, 'index'])->name('index');
-        Route::post('/{lead}/approve', [QcController::class, 'approve'])->name('approve');
-        Route::post('/{lead}/reject', [QcController::class, 'reject'])->name('reject');
-        Route::post('/{lead}/recycle', [QcController::class, 'recycle'])->name('recycle');
-    });
+    
+    // QC / Checker Workflow (QcController - TODO: Create controller or use MonitoringController)
+    // Route::prefix('qc')->name('qc.')->group(function () {
+    //     Route::get('/dashboard', [QcController::class, 'index'])->name('index');
+    //     Route::post('/{lead}/approve', [QcController::class, 'approve'])->name('approve');
+    //     Route::post('/{lead}/reject', [QcController::class, 'reject'])->name('reject');
+    //     Route::post('/{lead}/recycle', [QcController::class, 'recycle'])->name('recycle');
+    // });
 
     // Leads Management (Original block, modified to fit new structure)
     Route::middleware(['role:leads_view'])->group(function () {

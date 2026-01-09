@@ -18,6 +18,10 @@
                 <span>User Management</span>
             </a>
             @endif
+            <a href="{{ route('settings.couriers') }}" class="settings-nav-item">
+                <i class="fas fa-truck"></i>
+                <span>Courier Integration</span>
+            </a>
         </div>
 
         <!-- Settings Content -->
