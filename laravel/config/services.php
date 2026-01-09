@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'logistics' => [
+        'api_url' => env('LOGISTICS_API_URL'),
+        'api_key' => env('LOGISTICS_API_KEY'),
+        'customer_code' => env('LOGISTICS_CUSTOMER_CODE'),
+        'webhook_secret' => env('LOGISTICS_WEBHOOK_SECRET'),
+    ],
+
 ];

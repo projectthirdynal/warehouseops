@@ -4,149 +4,157 @@
 @section('page-title', 'Waybills')
 
 @push('styles')
-<style>
-    /* Order Tracking Timeline */
-    .order-tracking {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 4px;
-        padding: 8px 0;
-        min-width: 380px;
-    }
-
-    .tracking-step {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-        position: relative;
-    }
-
-    .step-icon {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: var(--bg-tertiary);
-        border: 2px solid var(--border-default);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--text-muted);
-        transition: all var(--transition-fast);
-        flex-shrink: 0;
-        font-size: 10px;
-    }
-
-    .tracking-step.completed .step-icon {
-        background: rgba(34, 197, 94, 0.15);
-        border-color: var(--accent-green);
-        color: var(--accent-green);
-    }
-
-    .tracking-step.current .step-icon {
-        background: rgba(59, 130, 246, 0.15);
-        border-color: var(--accent-blue);
-        color: var(--accent-blue);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-        animation: pulse-soft 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse-soft {
-        0%, 100% { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
-        50% { box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.1); }
-    }
-
-    .step-label {
-        font-size: 9px;
-        color: var(--text-muted);
-        white-space: nowrap;
-        font-weight: var(--font-medium);
-        text-align: center;
-        max-width: 60px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .tracking-step.completed .step-label,
-    .tracking-step.current .step-label {
-        color: var(--text-secondary);
-        font-weight: var(--font-semibold);
-    }
-
-    .tracking-line {
-        flex: 1;
-        height: 2px;
-        background: var(--border-default);
-        min-width: 16px;
-        margin: 0 2px;
-        margin-bottom: 18px;
-        border-radius: 1px;
-    }
-
-    .tracking-line.completed {
-        background: var(--accent-green);
-    }
-
-    /* Filter form adjustments */
-    .filter-form {
-        display: flex;
-        gap: var(--space-3);
-        align-items: center;
-        flex-wrap: wrap;
-    }
-
-    .filter-form input[type="text"] {
-        flex: 2;
-        min-width: 240px;
-    }
-
-    .filter-form select {
-        min-width: 140px;
-    }
-
-    @media (max-width: 1200px) {
+    <style>
+        /* Order Tracking Timeline */
         .order-tracking {
-            min-width: auto;
-            flex-wrap: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 4px;
+            padding: 8px 0;
+            min-width: 380px;
         }
 
-        .step-label {
-            font-size: 8px;
-            max-width: 50px;
+        .tracking-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            position: relative;
         }
 
         .step-icon {
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-default);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: all var(--transition-fast);
+            flex-shrink: 0;
+            font-size: 10px;
+        }
+
+        .tracking-step.completed .step-icon {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .tracking-step.current .step-icon {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            animation: pulse-soft 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-soft {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            }
+
+            50% {
+                box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.1);
+            }
+        }
+
+        .step-label {
             font-size: 9px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            font-weight: var(--font-medium);
+            text-align: center;
+            max-width: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tracking-step.completed .step-label,
+        .tracking-step.current .step-label {
+            color: var(--text-secondary);
+            font-weight: var(--font-semibold);
         }
 
         .tracking-line {
-            min-width: 12px;
-            margin-bottom: 16px;
+            flex: 1;
+            height: 2px;
+            background: var(--border-default);
+            min-width: 16px;
+            margin: 0 2px;
+            margin-bottom: 18px;
+            border-radius: 1px;
         }
-    }
 
-    @media (max-width: 768px) {
+        .tracking-line.completed {
+            background: var(--accent-green);
+        }
+
+        /* Filter form adjustments */
         .filter-form {
-            flex-direction: column;
+            display: flex;
+            gap: var(--space-3);
+            align-items: center;
+            flex-wrap: wrap;
         }
 
-        .filter-form input,
-        .filter-form select,
-        .filter-form .btn {
-            width: 100%;
+        .filter-form input[type="text"] {
+            flex: 2;
+            min-width: 240px;
         }
-    }
-</style>
+
+        .filter-form select {
+            min-width: 140px;
+        }
+
+        @media (max-width: 1200px) {
+            .order-tracking {
+                min-width: auto;
+                flex-wrap: nowrap;
+            }
+
+            .step-label {
+                font-size: 8px;
+                max-width: 50px;
+            }
+
+            .step-icon {
+                width: 24px;
+                height: 24px;
+                font-size: 9px;
+            }
+
+            .tracking-line {
+                min-width: 12px;
+                margin-bottom: 16px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .filter-form {
+                flex-direction: column;
+            }
+
+            .filter-form input,
+            .filter-form select,
+            .filter-form .btn {
+                width: 100%;
+            }
+        }
+    </style>
 @endpush
 
 @section('content')
     <!-- Page Header -->
     <div class="section-header">
         <h2>
-            <svg class="section-header-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="section-header-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 <polyline points="14 2 14 8 20 8"></polyline>
                 <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -205,17 +213,14 @@
     <!-- Search and Filter -->
     <div class="search-filter">
         <form method="GET" action="{{ route('waybills') }}" class="filter-form">
-            <input
-                type="text"
-                name="search"
-                placeholder="Search waybill, sender, receiver, or phone..."
-                value="{{ request('search') }}"
-            >
+            <input type="text" name="search" placeholder="Search waybill, sender, receiver, or phone..."
+                value="{{ request('search') }}">
 
             <select name="item_name">
                 <option value="">All Products</option>
                 @foreach($productOptions as $product)
-                    <option value="{{ $product }}" {{ request('item_name') == $product ? 'selected' : '' }}>{{ $product }}</option>
+                    <option value="{{ $product }}" {{ request('item_name') == $product ? 'selected' : '' }}>{{ $product }}
+                    </option>
                 @endforeach
             </select>
 
@@ -241,7 +246,7 @@
                 <i class="fas fa-search" style="font-size: 11px;"></i>
                 Search
             </button>
-            
+
             @if(request()->anyFilled(['search', 'status', 'item_name']))
                 <a href="{{ route('waybills') }}" class="btn btn-secondary btn-sm">
                     <i class="fas fa-times" style="font-size: 11px;"></i>
@@ -253,7 +258,8 @@
 
     <!-- Results Info -->
     <div class="waybills-info">
-        Showing <strong>{{ number_format($waybills->count()) }}</strong> of <strong>{{ number_format($waybills->total()) }}</strong> waybills
+        Showing <strong>{{ number_format($waybills->count()) }}</strong> of
+        <strong>{{ number_format($waybills->total()) }}</strong> waybills
         @if($waybills->lastPage() > 1)
             &nbsp;•&nbsp; Page {{ $waybills->currentPage() }} of {{ $waybills->lastPage() }}
         @endif
@@ -281,7 +287,13 @@
                                 <span class="waybill-badge">{{ $waybill->waybill_number }}</span>
                             </td>
                             <td>
-                                <strong>{{ $waybill->item_name ?: $waybill->sender_name }}</strong>
+                                <div>
+                                    <strong>{{ $waybill->item_name ?: $waybill->sender_name }}</strong>
+                                    @if($waybill->remarks)
+                                        <br>
+                                        <small style="color: var(--text-muted); font-size: 11px;">{{ $waybill->remarks }}</small>
+                                    @endif
+                                </div>
                             </td>
                             <td>
                                 <div>
@@ -315,7 +327,8 @@
                                 @endphp
                                 <div class="order-tracking">
                                     @foreach($steps as $index => $step)
-                                        <div class="tracking-step {{ $index <= $currentStep ? 'completed' : '' }} {{ $index == $currentStep && $index < 4 ? 'current' : '' }}">
+                                        <div
+                                            class="tracking-step {{ $index <= $currentStep ? 'completed' : '' }} {{ $index == $currentStep && $index < 4 ? 'current' : '' }}">
                                             <div class="step-icon">
                                                 <i class="fas {{ $step['icon'] }}"></i>
                                             </div>
@@ -337,7 +350,8 @@
                         <tr>
                             <td colspan="7" class="empty-state">
                                 <div style="padding: var(--space-6);">
-                                    <i class="fas fa-file-invoice" style="font-size: 28px; color: var(--text-muted); margin-bottom: var(--space-3); display: block;"></i>
+                                    <i class="fas fa-file-invoice"
+                                        style="font-size: 28px; color: var(--text-muted); margin-bottom: var(--space-3); display: block;"></i>
                                     <p style="margin-bottom: var(--space-1);">No waybills found</p>
                                     <small style="color: var(--text-muted);">Try adjusting your search filters</small>
                                 </div>

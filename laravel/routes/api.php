@@ -66,3 +66,13 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
+// ============================
+// Webhook Routes (Public - for external providers)
+// ============================
+Route::prefix('webhooks')->group(function () {
+    // Logistics tracking webhook - receives POST from logistics provider
+    Route::post('/tracking', [\App\Http\Controllers\Api\WebhookController::class, 'receiveTrackingUpdate']);
+
+    // Health check endpoint for webhook monitoring
+    Route::get('/tracking/health', [\App\Http\Controllers\Api\WebhookController::class, 'health']);
+});

@@ -1,0 +1,85 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Waybill Tracking Webhook Payload",
+    "description": "Schema for incoming webhook from logistics provider with tracking status updates",
+    "type": "object",
+    "required": [
+        "waybill_number",
+        "status"
+    ],
+    "properties": {
+        "waybill_number": {
+            "type": "string",
+            "description": "The unique waybill/tracking number",
+            "example": "JT1234567890"
+        },
+        "status": {
+            "type": "string",
+            "description": "Current tracking status from J&T",
+            "enum": [
+                "PICKUP_FAILED",
+                "PICKUP",
+                "DEPARTURE",
+                "ARRIVAL",
+                "DELIVERING",
+                "DELIVERY_FAILED",
+                "DELIVERED",
+                "RETURN",
+                "RETURNED"
+            ],
+            "example": "DELIVERING"
+        },
+        "location": {
+            "type": "string",
+            "description": "Current location/hub of the package",
+            "example": "Manila Distribution Center"
+        },
+        "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO8601 timestamp of the status update",
+            "example": "2026-01-09T09:45:00+08:00"
+        },
+        "details": {
+            "type": "string",
+            "description": "Additional details or notes about the status",
+            "example": "Package arrived at sorting facility"
+        },
+        "rider_name": {
+            "type": "string",
+            "description": "Name of delivery rider (if applicable)"
+        },
+        "rider_phone": {
+            "type": "string",
+            "description": "Contact number of delivery rider"
+        },
+        "signature_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to proof of delivery signature image"
+        },
+        "photo_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to delivery photo"
+        }
+    },
+    "examples": [
+        {
+            "waybill_number": "JT1234567890",
+            "status": "IN_TRANSIT",
+            "location": "Manila Hub",
+            "timestamp": "2026-01-09T09:45:00+08:00",
+            "details": "Package in transit to destination city"
+        },
+        {
+            "waybill_number": "JT1234567890",
+            "status": "DELIVERED",
+            "location": "Quezon City",
+            "timestamp": "2026-01-09T14:30:00+08:00",
+            "details": "Delivered to consignee",
+            "rider_name": "Juan Dela Cruz",
+            "signature_url": "https://logistics.example.com/signatures/abc123.png"
+        }
+    ]
+}
