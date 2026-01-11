@@ -139,6 +139,25 @@
             width: 100%;
         }
     }
+
+    /* Repeat Customer Badge */
+    .repeat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(34, 197, 94, 0.15);
+        color: #22c55e;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 600;
+        margin-left: 8px;
+        border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .repeat-badge i {
+        font-size: 9px;
+    }
 </style>
 @endpush
 
@@ -285,7 +304,18 @@
                             </td>
                             <td>
                                 <div>
-                                    <strong>{{ $waybill->receiver_name }}</strong>
+                                    @if($waybill->customer)
+                                        <a href="{{ route('customers.show', $waybill->customer->id) }}" class="text-white text-decoration-none" style="border-bottom: 1px dashed var(--text-muted);">
+                                            <strong>{{ $waybill->receiver_name }}</strong>
+                                        </a>
+                                    @else
+                                        <strong>{{ $waybill->receiver_name }}</strong>
+                                    @endif
+                                    @if($waybill->is_repeat_customer ?? false)
+                                        <span class="repeat-badge" title="Repeat customer - {{ $waybill->total_customer_orders }} total orders">
+                                            <i class="fas fa-redo-alt"></i> {{ $waybill->total_customer_orders }}
+                                        </span>
+                                    @endif
                                     <br>
                                     <small>{{ $waybill->receiver_phone }}</small>
                                 </div>

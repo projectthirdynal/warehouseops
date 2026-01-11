@@ -59,6 +59,23 @@ class WaybillController extends Controller
 
         $productOptions = Waybill::whereNotNull('item_name')->distinct()->orderBy('item_name')->pluck('item_name');
 
+        // Add repeat order indicator for each waybill
+        $phoneOrderCounts = [];
+        foreach ($waybills as $waybill) {
+            $phone = $waybill->receiver_phone;
+            if (!isset($phoneOrderCounts[$phone])) {
+                // Count total orders for this phone number
+                $phoneOrderCounts[$phone] = Waybill::where('receiver_phone', $phone)->count();
+            }
+            $waybill->total_customer_orders = $phoneOrderCounts[$phone];
+            $waybill->is_repeat_customer = $phoneOrderCounts[$phone] > 1;
+            
+            // Try to find customer by phone
+            $waybill->customer = \App\Models\Customer::where('phone_primary', $phone)
+                ->orWhere('phone_secondary', $phone)
+                ->first();
+        }
+
         return view('waybills', compact('waybills', 'stats', 'productOptions'));
     }
 
