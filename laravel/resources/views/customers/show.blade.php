@@ -416,110 +416,72 @@
                     </div>
                 </div>
 
-                {{-- Full Waybill History (with Repeat Order Indicator) --}}
+                {{-- Full Waybill History (Simplified) --}}
                 @if(isset($waybills) && $waybills->count() > 0)
                     <div class="profile-card mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="text-white fw-bold mb-0">
-                                <i class="fas fa-shipping-fast me-2 text-info"></i> Full Waybill History
+                                <i class="fas fa-box me-2 text-info"></i> Order History
                             </h6>
-                            <div class="d-flex align-items-center gap-2">
-                                @if(($metrics['products_ordered'] ?? 0) > 0)
-                                    <span class="badge bg-info bg-opacity-10 text-info">
-                                        {{ $metrics['products_ordered'] }} products
-                                    </span>
-                                @endif
-                                <span class="badge bg-primary bg-opacity-10 text-primary">
-                                    {{ $waybills->count() }} waybills
-                                </span>
-                            </div>
+                            <span class="badge bg-info bg-opacity-10 text-info px-3 py-2">
+                                {{ $waybills->count() }} Orders
+                            </span>
                         </div>
 
-                        {{-- Product Summary --}}
+                        {{-- Simple Product Summary --}}
                         @if(isset($productCounts) && $productCounts->count() > 0)
-                            <div class="mb-3 p-3 rounded-3" style="background: rgba(255,255,255,0.03);">
-                                <div class="small text-white-50 mb-2"><i class="fas fa-chart-pie me-1"></i> Products Ordered:</div>
-                                <div class="d-flex flex-wrap gap-2">
-                                    @foreach($productCounts->sortDesc() as $product => $count)
-                                        <span class="badge {{ $count > 1 ? 'bg-success' : 'bg-secondary' }} bg-opacity-20 text-{{ $count > 1 ? 'success' : 'white' }} border border-{{ $count > 1 ? 'success' : 'secondary' }} border-opacity-30 px-2 py-1">
-                                            {{ $product ?? 'Unknown' }} 
-                                            @if($count > 1)
-                                                <span class="ms-1 badge bg-success rounded-pill" style="font-size: 10px;">×{{ $count }}</span>
-                                            @endif
-                                        </span>
-                                    @endforeach
-                                </div>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                @foreach($productCounts->sortDesc() as $product => $count)
+                                    <span class="badge bg-dark border border-secondary px-3 py-2">
+                                        {{ $product ?? 'Unknown' }}
+                                        @if($count > 1)
+                                            <span class="text-success fw-bold ms-1">+{{ $count }}</span>
+                                        @endif
+                                    </span>
+                                @endforeach
                             </div>
                         @endif
 
-                        <div class="custom-scrollbar" style="max-height: 500px; overflow-y: auto;">
-                            <table class="table table-dark table-hover mb-0" style="font-size: 0.85rem;">
-                                <thead style="position: sticky; top: 0; background: #1a1d24;">
-                                    <tr>
-                                        <th class="border-secondary">Waybill #</th>
-                                        <th class="border-secondary">Product</th>
-                                        <th class="border-secondary">Status</th>
-                                        <th class="border-secondary">COD</th>
-                                        <th class="border-secondary">Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($waybills as $waybill)
-                                        <tr>
-                                            <td class="border-secondary">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <a href="{{ route('waybills.print', $waybill->id) }}" target="_blank" class="text-info text-decoration-none">
-                                                        {{ $waybill->waybill_number }}
-                                                    </a>
-                                                    @if($waybill->is_repeat_order ?? false)
-                                                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30" style="font-size: 9px;">
-                                                            <i class="fas fa-redo-alt me-1"></i>REPEAT
-                                                        </span>
-                                                    @endif
-                                                </div>
-                                            </td>
-                                            <td class="border-secondary">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    {{ $waybill->item_name ?? 'N/A' }}
-                                                    @if(($waybill->order_count_for_product ?? 1) > 1)
-                                                        <span class="text-success small" title="Customer ordered this product {{ $waybill->order_count_for_product }} times">
-                                                            ({{ $waybill->order_count_for_product }}×)
-                                                        </span>
-                                                    @endif
-                                                </div>
-                                            </td>
-                                            <td class="border-secondary">
-                                                @php
-                                                    $statusColors = [
-                                                        'delivered' => 'success',
-                                                        'returned' => 'danger',
-                                                        'for return' => 'danger',
-                                                        'pending' => 'warning',
-                                                        'in transit' => 'info',
-                                                        'delivering' => 'primary',
-                                                    ];
-                                                    $statusColor = $statusColors[strtolower($waybill->status)] ?? 'secondary';
-                                                @endphp
-                                                <span class="badge bg-{{ $statusColor }} bg-opacity-20 text-{{ $statusColor }}">
-                                                    {{ strtoupper($waybill->status) }}
-                                                </span>
-                                            </td>
-                                            <td class="border-secondary">
-                                                @if($waybill->cod_amount > 0)
-                                                    ₱{{ number_format($waybill->cod_amount, 2) }}
-                                                @else
-                                                    <span class="text-white-50">-</span>
+                        {{-- Simple Order List --}}
+                        <div class="custom-scrollbar" style="max-height: 400px; overflow-y: auto;">
+                            @foreach($waybills as $waybill)
+                                <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-25">
+                                    <div class="d-flex align-items-center gap-3">
+                                        {{-- Status Icon --}}
+                                        @php
+                                            $statusIcon = match(strtolower($waybill->status)) {
+                                                'delivered' => ['fa-check-circle', 'text-success'],
+                                                'returned', 'for return' => ['fa-times-circle', 'text-danger'],
+                                                'in transit' => ['fa-truck', 'text-info'],
+                                                'delivering' => ['fa-motorcycle', 'text-primary'],
+                                                default => ['fa-clock', 'text-warning'],
+                                            };
+                                        @endphp
+                                        <i class="fas {{ $statusIcon[0] }} {{ $statusIcon[1] }}" style="font-size: 18px;"></i>
+                                        
+                                        <div>
+                                            <div class="text-white">
+                                                {{ $waybill->item_name ?? 'Unknown Product' }}
+                                                @if(($waybill->order_count_for_product ?? 1) > 1)
+                                                    <span class="text-success small">({{ $waybill->order_count_for_product }}×)</span>
                                                 @endif
-                                            </td>
-                                            <td class="border-secondary">
-                                                <div class="text-white-50 small">
-                                                    {{ $waybill->created_at->format('M d, Y') }}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                                            </div>
+                                            <div class="text-white-50 small">
+                                                {{ $waybill->waybill_number }} • {{ $waybill->created_at->format('M d, Y') }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="text-end">
+                                        @if($waybill->cod_amount > 0)
+                                            <div class="text-white fw-bold">₱{{ number_format($waybill->cod_amount, 2) }}</div>
+                                        @endif
+                                        <span class="badge bg-{{ $statusIcon[1] == 'text-success' ? 'success' : ($statusIcon[1] == 'text-danger' ? 'danger' : 'secondary') }} bg-opacity-20 {{ $statusIcon[1] }}" style="font-size: 10px;">
+                                            {{ strtoupper($waybill->status) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                 @endif
