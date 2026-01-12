@@ -1,0 +1,219 @@
+================================================================================
+                         WAREHOUSEOPS SYSTEM DOCUMENTATION
+================================================================================
+
+================================================================================
+DASHBOARD
+================================================================================
+
+Date: 2026-01-03
+Real-time operational overview displaying waybill statistics, delivery metrics, and recent dispatch activity for warehouse monitoring.
+
+    Date Range Filter - Allows users to select start and end dates to filter statistics for a specific time period.
+    
+    Total Waybills Card - Displays the complete count of all waybills currently in the system.
+    
+    In Transit Card - Shows the number of waybills currently being transported between locations.
+    
+    Delivering Card - Displays the count of waybills currently out for final delivery to customers.
+    
+    Delivered Card - Shows the total number of successfully delivered waybills.
+    
+    Returned Card - Displays the count of waybills that were returned or marked for return.
+    
+    HQ Scheduling Card - Shows waybills pending headquarters scheduling to outlet distribution.
+    
+    Pending Card - Displays the number of waybills awaiting initial processing.
+    
+    Delivery Rate Percentage - Calculates and displays the success rate of deliveries within the selected period.
+    
+    Return Rate Percentage - Shows the percentage of waybills that resulted in returns within the selected period.
+    
+    Recent Dispatch Activity Table - Lists the 10 most recent scanned waybills with details including waybill number, product, receiver, destination, scanner name, and timestamp.
+
+================================================================================
+WAYBILLS
+================================================================================
+
+Date: 2026-01-03
+Complete waybill record management with search, filtering, and visual order tracking timeline for all shipments.
+
+    Search Bar - Enables searching waybills by waybill number, sender name, receiver name, phone, or product.
+    
+    Product Filter - Dropdown to filter waybills by specific product/item name.
+    
+    Status Filter - Dropdown to filter waybills by delivery status (pending, in transit, delivering, delivered, returned).
+    
+    Rows Per Page Selector - Allows changing the number of waybills displayed per page (10, 25, 50, 100).
+    
+    Waybill Number Column - Displays the unique tracking number for each shipment.
+    
+    Product Column - Shows the item name or sender name for the waybill.
+    
+    Receiver Column - Displays receiver name, phone number, and repeat customer badge if applicable.
+    
+    Destination Column - Shows the delivery destination address.
+    
+    Weight Column - Displays the package weight in kilograms.
+    
+    Order Tracking Timeline - Visual step-by-step progress indicator showing status from pending through HQ, transit, delivering, to delivered/returned.
+    
+    Date Column - Shows the signing or creation date of the waybill.
+    
+    Pagination Controls - Navigate between pages of waybill results.
+
+    --- CUSTOMER PROFILE ---
+    Comprehensive customer view accessed by clicking on receiver name (Waybills page) or customer name link (Leads page), displaying contact information, order history, and management actions.
+    
+        Customer Header - Displays customer name, risk level badge, and customer score.
+        
+        Contact Information - Shows primary and secondary phone numbers.
+        
+        Address Section - Displays primary address, city, province, barangay, and street.
+        
+        Average Order Value Metric - Calculated average value per delivered order.
+        
+        Days Since First Order - Time elapsed since customer's first purchase.
+        
+        Days Since Last Order - Time elapsed since most recent order.
+        
+        Most Ordered Product - Product the customer has ordered most frequently.
+        
+        Products Ordered Count - Total number of unique products ordered.
+        
+        Order History Table - Complete list of customer waybills with tracking status and repeat order indicators.
+        
+        Associated Leads List - Leads linked to this customer with status and assignment details.
+        
+        Create Lead Button - Generate new lead from customer profile with agent assignment.
+        
+        Update Customer Button - Edit customer contact and address information.
+        
+        Blacklist Button - Add customer to blacklist with required reason.
+        
+        Unblacklist Button - Remove customer from blacklist status.
+
+================================================================================
+LEADS
+================================================================================
+
+Date: 2026-01-03
+Centralized lead management interface for viewing, filtering, distributing, importing, exporting, and tracking sales leads with customer intelligence integration.
+
+    Search Input - Text search across lead names, phones, and addresses.
+    
+    Status Filter Pills - Quick filter buttons for NEW, CALLING, NO ANSWER, CALLBACK, SALE, and REJECT statuses.
+    
+    Agent Filter - Dropdown to view leads assigned to a specific agent.
+    
+    Date Range Filter - Filter leads by creation or activity date range.
+    
+    Checkbox Selection - Select individual or all leads for bulk operations.
+    
+    Customer Name Cell - Displays lead name with customer profile link and score badge.
+    
+    Phone Number Cell - Shows primary contact number with click-to-call capability.
+    
+    Customer History Metrics - Displays order count, delivery success rate, and risk badges.
+    
+    Location Cell - Shows city and address information for delivery planning.
+    
+    Status Badge - Color-coded indicator of current lead status.
+    
+    Last Activity Time - Shows when the lead was last updated or contacted.
+    
+    Notes Preview - Truncated view of agent notes on the lead.
+    
+    Action Button - Quick access to call or update the lead status.
+    
+    Clear All Button - Admin function to remove all leads from the system.
+
+    --- LEAD DISTRIBUTION ---
+    Intelligent lead assignment system that matches leads to agents based on performance, workload, and specialization criteria.
+    
+        Agent Selection Dropdown - Choose target agent for lead assignment.
+        
+        Lead Count Input - Specify the number of leads to distribute.
+        
+        Smart Distribution Toggle - Enable AI-powered agent matching based on scoring algorithms.
+        
+        Geographic Filter - Option to match leads with agents specializing in specific regions.
+        
+        Distribution Statistics - Display of agent workload and available capacity.
+        
+        Distribute Button - Execute the lead distribution with selected parameters.
+        
+        Distribution Hint - Informational message showing selected lead count and assignment status.
+
+    --- LEAD IMPORT/EXPORT ---
+    File-based lead management for bulk importing new leads from Excel and exporting lead data for external processing.
+    
+        File Upload Area - Drag-and-drop zone for uploading Excel files containing lead data.
+        
+        Browse Button - Alternative file selection through system file picker.
+        
+        File Requirements Info - Display of accepted formats (.xlsx, .xls) and size limits (50MB).
+        
+        Upload Progress Bar - Visual indicator of file upload and processing progress.
+        
+        Import Results - Summary showing successful imports and any validation errors.
+        
+        CSV Export - Download all filtered leads in standard CSV format.
+        
+        J&T Export - Export leads in J&T Express courier-specific Excel format for shipping integration.
+
+================================================================================
+MONITORING
+================================================================================
+
+Date: 2026-01-03
+Administrative oversight of all lead interactions and outcomes for quality assurance and performance tracking.
+
+    Status Filter - Filter monitored leads by outcome status.
+    
+    Agent Filter - View activity for specific agent.
+    
+    Date Range Filter - Filter by activity date range.
+    
+    Lead Activity Table - List of all worked leads with customer info, status, agent, and last update.
+    
+    Activity Timeline - Chronological view of status changes and agent interactions.
+
+================================================================================
+QC DASHBOARD
+================================================================================
+
+Date: 2026-01-03
+Quality control verification queue for reviewing and approving sales before order processing to ensure compliance and data accuracy.
+
+    Pending Count Card - Displays the number of sales awaiting QC verification.
+    
+    Passed Today Card - Shows the count of sales approved by QC today.
+    
+    Failed Today Card - Displays the count of sales rejected by QC today.
+    
+    Sales Verification Queue Table - Lists all pending sales in FIFO order with date, agent, customer, product, and recording columns.
+    
+    Date Column - Shows when the sale was submitted with relative time display.
+    
+    Agent Column - Displays the agent who made the sale with avatar and ID.
+    
+    Customer Column - Shows customer name and phone number for verification.
+    
+    Product Column - Displays product name, quantity, and price for the sale.
+    
+    Recording Column - Audio playback button for call recording verification (if available).
+    
+    Approve Button - Mark the sale as QC passed and ready for processing.
+    
+    Reject Button - Fail the sale and cancel the lead with required reason notes.
+    
+    Recycle Button - Return the lead to the pool for reassignment with reason notes.
+    
+    Action Modal - Popup form for entering rejection or recycle reason before confirmation.
+    
+    Pagination Controls - Navigate through pages of pending sales queue.
+
+================================================================================
+                              END OF DOCUMENTATION
+================================================================================

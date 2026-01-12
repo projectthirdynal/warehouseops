@@ -88,6 +88,22 @@
         background: var(--accent-green);
     }
 
+    /* Returned status - Red styling */
+    .tracking-step.returned .step-icon {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: #ef4444;
+        color: #ef4444;
+    }
+
+    .tracking-step.returned .step-label {
+        color: #ef4444;
+        font-weight: var(--font-semibold);
+    }
+
+    .tracking-line.returned {
+        background: #ef4444;
+    }
+
     /* Filter form adjustments */
     .filter-form {
         display: flex;
@@ -345,14 +361,14 @@
                                 @endphp
                                 <div class="order-tracking">
                                     @foreach($steps as $index => $step)
-                                        <div class="tracking-step {{ $index <= $currentStep ? 'completed' : '' }} {{ $index == $currentStep && $index < 4 ? 'current' : '' }}">
+                                        <div class="tracking-step {{ $index <= $currentStep ? 'completed' : '' }} {{ $index == $currentStep && $index < 4 ? 'current' : '' }} {{ $isReturned && $index == 4 ? 'returned' : '' }}">
                                             <div class="step-icon">
                                                 <i class="fas {{ $step['icon'] }}"></i>
                                             </div>
                                             <div class="step-label">{{ $step['label'] }}</div>
                                         </div>
                                         @if($index < count($steps) - 1)
-                                            <div class="tracking-line {{ $index < $currentStep ? 'completed' : '' }}"></div>
+                                            <div class="tracking-line {{ $index < $currentStep ? 'completed' : '' }} {{ $isReturned && $index == 3 ? 'returned' : '' }}"></div>
                                         @endif
                                     @endforeach
                                 </div>
