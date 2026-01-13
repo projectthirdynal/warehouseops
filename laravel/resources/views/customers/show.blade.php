@@ -304,159 +304,142 @@
                     </div>
                 </div>
 
-                {{-- Order History Row Grid - Cube Style --}}
-                <div class="d-flex flex-row gap-4 mb-4 w-100" style="flex-wrap: nowrap;">
-                    {{-- Order History Timeline (Left) --}}
-                    <div style="flex: 0 0 320px; min-width: 0;">
-                        <div class="profile-card" style="height: 280px; overflow: hidden;">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="text-white fw-bold mb-0">
-                                    <i class="fas fa-history me-2 text-info"></i> Order History Timeline
-                                </h6>
-                                <span class="badge bg-info bg-opacity-10 text-info">
-                                    {{ $customer->orderHistory->count() }} orders
-                                </span>
-                            </div>
 
-                            <div class="custom-scrollbar" style="max-height: 220px; overflow-y: auto;">
-                                @forelse($customer->orderHistory as $order)
-                                    <div class="timeline-item">
+                {{-- Order History Side-by-Side Container --}}
+                <div class="d-flex gap-4 w-100 mb-4">
+                    {{-- Order History Timeline --}}
+                    <div class="profile-card" style="flex: 0 0 45%; min-width: 0;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="text-white fw-bold mb-0">
+                                <i class="fas fa-history me-2 text-info"></i> Order History Timeline
+                            </h6>
+                            <span class="badge bg-info bg-opacity-10 text-info">
+                                {{ $customer->orderHistory->count() }} orders
+                            </span>
+                        </div>
+
+                        <div class="custom-scrollbar" style="max-height: 400px; overflow-y: auto;">
+                            @forelse($customer->orderHistory as $order)
+                                <div class="timeline-item">
+                                    @php
+                                        $dotClass = match(strtolower($order->current_status)) {
+                                            'delivered' => 'delivered',
+                                            'returned' => 'returned',
+                                            default => 'pending'
+                                        };
+                                    @endphp
+                                    <div class="timeline-dot timeline-dot-{{ $dotClass }}"></div>
+
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <div class="text-white fw-bold">{{ $order->created_at->format('M d, Y') }}</div>
+                                            <div class="text-white-50 small">{{ $order->created_at->format('h:i A') }}</div>
+                                        </div>
                                         @php
-                                            $dotClass = match(strtolower($order->current_status)) {
-                                                'delivered' => 'delivered',
-                                                'returned' => 'returned',
-                                                default => 'pending'
-                                            };
+                                            $statusColors = [
+                                                'DELIVERED' => 'success',
+                                                'RETURNED' => 'danger',
+                                                'PENDING' => 'warning',
+                                                'IN_TRANSIT' => 'info'
+                                            ];
+                                            $statusColor = $statusColors[$order->current_status] ?? 'secondary';
                                         @endphp
-                                        <div class="timeline-dot timeline-dot-{{ $dotClass }}"></div>
-
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <div>
-                                                <div class="text-white fw-bold">{{ $order->created_at->format('M d, Y') }}</div>
-                                                <div class="text-white-50 small">{{ $order->created_at->format('h:i A') }}</div>
-                                            </div>
-                                            @php
-                                                $statusColors = [
-                                                    'DELIVERED' => 'success',
-                                                    'RETURNED' => 'danger',
-                                                    'PENDING' => 'warning',
-                                                    'IN_TRANSIT' => 'info'
-                                                ];
-                                                $statusColor = $statusColors[$order->current_status] ?? 'secondary';
-                                            @endphp
-                                            <span class="badge bg-{{ $statusColor }} bg-opacity-10 text-{{ $statusColor }} border border-{{ $statusColor }} border-opacity-20">
-                                                {{ $order->current_status }}
-                                            </span>
-                                        </div>
-
-                                        <div class="text-white mb-1">
-                                            <i class="fas fa-box me-2 text-info"></i>
-                                            {{ $order->waybill_number }}
-                                        </div>
-
-                                        @if($order->order_value)
-                                            <div class="text-white-50 small">
-                                                Amount: ₱{{ number_format($order->order_value, 2) }}
-                                            </div>
-                                        @endif
+                                        <span class="badge bg-{{ $statusColor }} bg-opacity-10 text-{{ $statusColor }} border border-{{ $statusColor }} border-opacity-20">
+                                            {{ $order->current_status }}
+                                        </span>
                                     </div>
-                                @empty
-                                    <div class="text-center py-5">
-                                        <i class="fas fa-box-open fa-3x text-white-50 opacity-25 mb-3"></i>
-                                        <p class="text-white-50">No order history found</p>
+
+                                    <div class="text-white mb-1">
+                                        <i class="fas fa-box me-2 text-info"></i>
+                                        {{ $order->waybill_number }}
                                     </div>
-                                @endforelse
-                            </div>
+
+                                    @if($order->order_value)
+                                        <div class="text-white-50 small">
+                                            Amount: ₱{{ number_format($order->order_value, 2) }}
+                                        </div>
+                                    @endif
+                                </div>
+                            @empty
+                                <div class="text-center py-5">
+                                    <i class="fas fa-box-open fa-3x text-white-50 opacity-25 mb-3"></i>
+                                    <p class="text-white-50">No order history found</p>
+                                </div>
+                            @endforelse
                         </div>
                     </div>
 
-                    {{-- Order History (Right) --}}
-                    <div style="flex: 1; min-width: 0;">
-                        @if(isset($waybills) && $waybills->count() > 0)
-                            <div class="profile-card" style="height: 280px; overflow: hidden;">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="text-white fw-bold mb-0">
-                                        <i class="fas fa-box me-2 text-info"></i> Order History
-                                    </h6>
-                                    <span class="badge bg-info bg-opacity-10 text-info px-3 py-2">
-                                        {{ $waybills->count() }} Orders
-                                    </span>
-                                </div>
+                    {{-- Full Waybill History (Simplified) --}}
+                    @if(isset($waybills) && $waybills->count() > 0)
+                        <div class="profile-card" style="flex: 1; min-width: 0;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="text-white fw-bold mb-0">
+                                    <i class="fas fa-box me-2 text-info"></i> Order History
+                                </h6>
+                                <span class="badge bg-info bg-opacity-10 text-info px-3 py-2">
+                                    {{ $waybills->count() }} Orders
+                                </span>
+                            </div>
 
-                                {{-- Simple Product Summary --}}
-                                @if(isset($productCounts) && $productCounts->count() > 0)
-                                    <div class="d-flex flex-wrap gap-2 mb-3">
-                                        @foreach($productCounts->sortDesc() as $product => $count)
-                                            <span class="badge bg-dark border border-secondary px-3 py-2">
-                                                {{ $product ?? 'Unknown' }}
-                                                @if($count > 1)
-                                                    <span class="text-success fw-bold ms-1">+{{ $count }}</span>
-                                                @endif
-                                            </span>
-                                        @endforeach
-                                    </div>
-                                @endif
-
-                                {{-- Simple Order List --}}
-                                <div class="custom-scrollbar" style="max-height: 180px; overflow-y: auto;">
-                                    @foreach($waybills as $waybill)
-                                        <div class="d-flex justify-content-between align-items-center py-3 border-bottom border-secondary border-opacity-25">
-                                            <div class="d-flex align-items-center gap-3">
-                                                {{-- Status Icon --}}
-                                                @php
-                                                    $statusIcon = match(strtolower($waybill->status)) {
-                                                        'delivered' => ['fa-check-circle', 'text-success'],
-                                                        'returned', 'for return' => ['fa-times-circle', 'text-danger'],
-                                                        'in transit' => ['fa-truck', 'text-info'],
-                                                        'delivering' => ['fa-motorcycle', 'text-primary'],
-                                                        default => ['fa-clock', 'text-warning'],
-                                                    };
-                                                @endphp
-                                                <i class="fas {{ $statusIcon[0] }} {{ $statusIcon[1] }}" style="font-size: 18px;"></i>
-                                                
-                                                <div>
-                                                    <div class="text-white">
-                                                        {{ $waybill->item_name ?? 'Unknown Product' }}
-                                                        @if(($waybill->order_count_for_product ?? 1) > 1)
-                                                            <span class="text-success small">({{ $waybill->order_count_for_product }}×)</span>
-                                                        @endif
-                                                    </div>
-                                                    <div class="text-white-50 small">
-                                                        {{ $waybill->waybill_number }} • {{ $waybill->created_at->format('M d, Y') }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="text-end">
-                                                @if($waybill->cod_amount > 0)
-                                                    <div class="text-white fw-bold mb-1">₱{{ number_format($waybill->cod_amount, 2) }}</div>
-                                                @endif
-                                                <span class="badge bg-{{ $statusIcon[1] == 'text-success' ? 'success' : ($statusIcon[1] == 'text-danger' ? 'danger' : 'secondary') }} bg-opacity-20 {{ $statusIcon[1] }}" style="font-size: 10px;">
-                                                    {{ strtoupper($waybill->status) }}
-                                                </span>
-                                            </div>
-                                        </div>
+                            {{-- Simple Product Summary --}}
+                            @if(isset($productCounts) && $productCounts->count() > 0)
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    @foreach($productCounts->sortDesc() as $product => $count)
+                                        <span class="badge bg-dark border border-secondary px-3 py-2">
+                                            {{ $product ?? 'Unknown' }}
+                                            @if($count > 1)
+                                                <span class="text-success fw-bold ms-1">+{{ $count }}</span>
+                                            @endif
+                                        </span>
                                     @endforeach
                                 </div>
+                            @endif
+
+                            {{-- Simple Order List --}}
+                            <div class="custom-scrollbar" style="max-height: 400px; overflow-y: auto;">
+                                @foreach($waybills as $waybill)
+                                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-25">
+                                        <div class="d-flex align-items-center gap-3">
+                                            {{-- Status Icon --}}
+                                            @php
+                                                $statusIcon = match(strtolower($waybill->status)) {
+                                                    'delivered' => ['fa-check-circle', 'text-success'],
+                                                    'returned', 'for return' => ['fa-times-circle', 'text-danger'],
+                                                    'in transit' => ['fa-truck', 'text-info'],
+                                                    'delivering' => ['fa-motorcycle', 'text-primary'],
+                                                    default => ['fa-clock', 'text-warning'],
+                                                };
+                                            @endphp
+                                            <i class="fas {{ $statusIcon[0] }} {{ $statusIcon[1] }}" style="font-size: 18px;"></i>
+                                            
+                                            <div>
+                                                <div class="text-white">
+                                                    {{ $waybill->item_name ?? 'Unknown Product' }}
+                                                    @if(($waybill->order_count_for_product ?? 1) > 1)
+                                                        <span class="text-success small">({{ $waybill->order_count_for_product }}×)</span>
+                                                    @endif
+                                                </div>
+                                                <div class="text-white-50 small">
+                                                    {{ $waybill->waybill_number }} • {{ $waybill->created_at->format('M d, Y') }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="text-end">
+                                            @if($waybill->cod_amount > 0)
+                                                <div class="text-white fw-bold">₱{{ number_format($waybill->cod_amount, 2) }}</div>
+                                            @endif
+                                            <span class="badge bg-{{ $statusIcon[1] == 'text-success' ? 'success' : ($statusIcon[1] == 'text-danger' ? 'danger' : 'secondary') }} bg-opacity-20 {{ $statusIcon[1] }}" style="font-size: 10px;">
+                                                {{ strtoupper($waybill->status) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                @endforeach
                             </div>
-                        @else
-                            <div class="profile-card" style="height: 200px; overflow: hidden;">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="text-white fw-bold mb-0">
-                                        <i class="fas fa-box me-2 text-info"></i> Order History
-                                    </h6>
-                                    <span class="badge bg-info bg-opacity-10 text-info px-3 py-2">
-                                        0 Orders
-                                    </span>
-                                </div>
-                                <div class="text-center py-5">
-                                    <i class="fas fa-box-open fa-3x text-white-50 opacity-25 mb-3"></i>
-                                    <p class="text-white-50">No orders found</p>
-                                </div>
-                            </div>
-                        @endif
-                    </div>
+                        </div>
+                    @endif
                 </div>
+
 
                 {{-- Recycling History --}}
                 @if($customer->recyclingPool->count() > 0)
