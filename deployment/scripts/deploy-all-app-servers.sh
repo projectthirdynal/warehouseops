@@ -27,8 +27,8 @@ else
 fi
 
 # App Server IPs
-APP1_IP="192.168.120.33"
-APP2_IP="192.168.120.37"
+APP1_IP="192.168.0.33"
+APP2_IP="192.168.0.34"
 
 deploy_app_server() {
     local SERVER_IP=$1
@@ -53,6 +53,7 @@ deploy_app_server() {
     
     # Copy Laravel application
     echo "  - Copying Laravel application..."
+    $SSH_CMD $SSH_USER@${SERVER_IP} "mkdir -p /tmp/laravel"
     $SCP_CMD -r /tmp/laravel/* $SSH_USER@${SERVER_IP}:/tmp/laravel/
     
     # Copy configuration and setup script
@@ -62,7 +63,7 @@ deploy_app_server() {
     
     # Run setup script
     echo "  - Running setup script (this will take 5-7 minutes)..."
-    $SSH_CMD $SSH_USER@${SERVER_IP} "sudo bash /tmp/app-server-setup.sh"
+    $SSH_CMD $SSH_USER@${SERVER_IP} "echo $SSH_PASSWORD | sudo -S bash /tmp/app-server-setup.sh"
     
     # Verify
     echo "  - Verifying installation..."
@@ -73,16 +74,12 @@ deploy_app_server() {
 
 # Check if database is set up
 echo -e "${YELLOW}Checking database connectivity...${NC}"
-if timeout 1 bash -c 'cat < /dev/tcp/192.168.120.36/5432' &>/dev/null; then
+if timeout 1 bash -c 'cat < /dev/tcp/192.168.0.36/5432' &>/dev/null; then
     echo -e "${GREEN}✓ Database server is reachable${NC}"
 else
     echo -e "${RED}⚠ Warning: Database server may not be set up yet or is unreachable${NC}"
-    echo "Check connectivity to 192.168.120.36:5432"
-    read -p "Continue anyway? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
+    echo "Check connectivity to 192.168.0.36:5432"
+    echo "Proceeding anyway..."
 fi
 echo ""
 
@@ -98,8 +95,8 @@ echo -e "${GREEN}Deployment Complete!${NC}"
 echo -e "${GREEN}================================${NC}"
 echo ""
 echo "Testing load balancer..."
-curl -s http://192.168.120.38/health && echo -e "${GREEN}✓ Load balancer is now working!${NC}" || echo -e "${RED}✗ Load balancer still showing errors${NC}"
+curl -s http://192.168.0.35/health && echo -e "${GREEN}✓ Load balancer is now working!${NC}" || echo -e "${RED}✗ Load balancer still showing errors${NC}"
 
 echo ""
-echo "Access your application at: http://192.168.120.38"
-echo "HAProxy stats: http://192.168.120.38:8404/stats"
+echo "Access your application at: http://192.168.0.35"
+echo "HAProxy stats: http://192.168.0.35:8404/stats"

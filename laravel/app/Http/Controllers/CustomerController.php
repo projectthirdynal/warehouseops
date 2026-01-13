@@ -35,10 +35,27 @@ class CustomerController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        // Get all waybills for this customer by phone number
+        $waybills = \App\Models\Waybill::where('receiver_phone', $customer->phone_primary)
+            ->orWhere('receiver_phone', $customer->phone_secondary)
+            ->with('trackingHistory')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Detect repeat orders - count orders per product
+        $productCounts = $waybills->groupBy('item_name')->map->count();
+        
+        // Mark each waybill with repeat order info
+        $waybills = $waybills->map(function ($waybill) use ($productCounts) {
+            $waybill->is_repeat_order = ($productCounts[$waybill->item_name] ?? 0) > 1;
+            $waybill->order_count_for_product = $productCounts[$waybill->item_name] ?? 1;
+            return $waybill;
+        });
+
         // Calculate additional metrics
         $metrics = [
             'avg_order_value' => $customer->total_orders > 0
-                ? round($customer->total_delivered_value / $customer->total_delivered, 2)
+                ? round($customer->total_delivered_value / max($customer->total_delivered, 1), 2)
                 : 0,
             'days_since_first_order' => $customer->first_seen_at
                 ? $customer->first_seen_at->diffInDays(now())
@@ -46,9 +63,12 @@ class CustomerController extends Controller
             'days_since_last_order' => $customer->last_order_at
                 ? $customer->last_order_at->diffInDays(now())
                 : null,
+            'repeat_customer' => $customer->total_orders > 1,
+            'most_ordered_product' => $productCounts->sortDesc()->keys()->first(),
+            'products_ordered' => $productCounts->count(),
         ];
 
-        return view('customers.show', compact('customer', 'agents', 'metrics'));
+        return view('customers.show', compact('customer', 'agents', 'metrics', 'waybills', 'productCounts'));
     }
 
     /**

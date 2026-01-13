@@ -4,8 +4,126 @@
 @section('page-title', 'Waybills')
 
 @push('styles')
-    <style>
-        /* Order Tracking Timeline */
+
+<style>
+    /* Order Tracking Timeline */
+    .order-tracking {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 4px;
+        padding: 8px 0;
+        min-width: 380px;
+    }
+
+    .tracking-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        position: relative;
+    }
+
+    .step-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--bg-tertiary);
+        border: 2px solid var(--border-default);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        transition: all var(--transition-fast);
+        flex-shrink: 0;
+        font-size: 10px;
+    }
+
+    .tracking-step.completed .step-icon {
+        background: rgba(34, 197, 94, 0.15);
+        border-color: var(--accent-green);
+        color: var(--accent-green);
+    }
+
+    .tracking-step.current .step-icon {
+        background: rgba(59, 130, 246, 0.15);
+        border-color: var(--accent-blue);
+        color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        animation: pulse-soft 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-soft {
+        0%, 100% { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+        50% { box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.1); }
+    }
+
+    .step-label {
+        font-size: 9px;
+        color: var(--text-muted);
+        white-space: nowrap;
+        font-weight: var(--font-medium);
+        text-align: center;
+        max-width: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .tracking-step.completed .step-label,
+    .tracking-step.current .step-label {
+        color: var(--text-secondary);
+        font-weight: var(--font-semibold);
+    }
+
+    .tracking-line {
+        flex: 1;
+        height: 2px;
+        background: var(--border-default);
+        min-width: 16px;
+        margin: 0 2px;
+        margin-bottom: 18px;
+        border-radius: 1px;
+    }
+
+    .tracking-line.completed {
+        background: var(--accent-green);
+    }
+
+    /* Returned status - Red styling */
+    .tracking-step.returned .step-icon {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: #ef4444;
+        color: #ef4444;
+    }
+
+    .tracking-step.returned .step-label {
+        color: #ef4444;
+        font-weight: var(--font-semibold);
+    }
+
+    .tracking-line.returned {
+        background: #ef4444;
+    }
+
+    /* Filter form adjustments */
+    .filter-form {
+        display: flex;
+        gap: var(--space-3);
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .filter-form input[type="text"] {
+        flex: 2;
+        min-width: 240px;
+    }
+
+    .filter-form select {
+        min-width: 140px;
+    }
+
+    @media (max-width: 1200px) {
+
         .order-tracking {
             display: flex;
             align-items: center;
@@ -108,45 +226,28 @@
             min-width: 240px;
         }
 
-        .filter-form select {
-            min-width: 140px;
-        }
+    }
 
-        @media (max-width: 1200px) {
-            .order-tracking {
-                min-width: auto;
-                flex-wrap: nowrap;
-            }
+    /* Repeat Customer Badge */
+    .repeat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(34, 197, 94, 0.15);
+        color: #22c55e;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 600;
+        margin-left: 8px;
+        border: 1px solid rgba(34, 197, 94, 0.3);
+    }
 
-            .step-label {
-                font-size: 8px;
-                max-width: 50px;
-            }
+    .repeat-badge i {
+        font-size: 9px;
+    }
+</style>
 
-            .step-icon {
-                width: 24px;
-                height: 24px;
-                font-size: 9px;
-            }
-
-            .tracking-line {
-                min-width: 12px;
-                margin-bottom: 16px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .filter-form {
-                flex-direction: column;
-            }
-
-            .filter-form input,
-            .filter-form select,
-            .filter-form .btn {
-                width: 100%;
-            }
-        }
-    </style>
 @endpush
 
 @section('content')
@@ -297,7 +398,18 @@
                             </td>
                             <td>
                                 <div>
-                                    <strong>{{ $waybill->receiver_name }}</strong>
+                                    @if($waybill->customer)
+                                        <a href="{{ route('customers.show', $waybill->customer->id) }}" class="text-white text-decoration-none" style="border-bottom: 1px dashed var(--text-muted);">
+                                            <strong>{{ $waybill->receiver_name }}</strong>
+                                        </a>
+                                    @else
+                                        <strong>{{ $waybill->receiver_name }}</strong>
+                                    @endif
+                                    @if($waybill->is_repeat_customer ?? false)
+                                        <span class="repeat-badge" title="Repeat customer - {{ $waybill->total_customer_orders }} total orders">
+                                            <i class="fas fa-redo-alt"></i> {{ $waybill->total_customer_orders }}
+                                        </span>
+                                    @endif
                                     <br>
                                     <small>{{ $waybill->receiver_phone }}</small>
                                 </div>
@@ -327,15 +439,14 @@
                                 @endphp
                                 <div class="order-tracking">
                                     @foreach($steps as $index => $step)
-                                        <div
-                                            class="tracking-step {{ $index <= $currentStep ? 'completed' : '' }} {{ $index == $currentStep && $index < 4 ? 'current' : '' }}">
+                                        <div class="tracking-step {{ $index <= $currentStep ? 'completed' : '' }} {{ $index == $currentStep && $index < 4 ? 'current' : '' }} {{ $isReturned && $index == 4 ? 'returned' : '' }}">
                                             <div class="step-icon">
                                                 <i class="fas {{ $step['icon'] }}"></i>
                                             </div>
                                             <div class="step-label">{{ $step['label'] }}</div>
                                         </div>
                                         @if($index < count($steps) - 1)
-                                            <div class="tracking-line {{ $index < $currentStep ? 'completed' : '' }}"></div>
+                                            <div class="tracking-line {{ $index < $currentStep ? 'completed' : '' }} {{ $isReturned && $index == 3 ? 'returned' : '' }}"></div>
                                         @endif
                                     @endforeach
                                 </div>

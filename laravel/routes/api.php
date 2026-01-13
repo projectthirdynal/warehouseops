@@ -67,12 +67,27 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // ============================
-// Webhook Routes (Public - for external providers)
+// Courier Webhook Routes (Public - authenticated via API key)
 // ============================
-Route::prefix('webhooks')->group(function () {
-    // Logistics tracking webhook - receives POST from logistics provider
-    Route::post('/tracking', [\App\Http\Controllers\Api\WebhookController::class, 'receiveTrackingUpdate']);
+Route::prefix('courier')->group(function () {
+    // J&T Express webhook
+    Route::post('/jnt/webhook', [\App\Http\Controllers\Api\CourierWebhookController::class, 'handleJnt']);
 
-    // Health check endpoint for webhook monitoring
-    Route::get('/tracking/health', [\App\Http\Controllers\Api\WebhookController::class, 'health']);
+    // Generic courier webhook handler
+    Route::post('/{courierCode}/webhook', [\App\Http\Controllers\Api\CourierWebhookController::class, 'handleGeneric']);
+});
+
+// Manual status update (authenticated)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/waybill/{waybill}/update-status', function (\Illuminate\Http\Request $request, \App\Models\Waybill $waybill) {
+        $request->validate([
+            'status' => 'required|string|in:pickup_failed,picked_up,in_transit,arrived_hub,out_for_delivery,delivery_failed,delivered,returning,returned',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $courierService = \App\Services\Courier\CourierFactory::default();
+        $courierService->updateStatus($waybill, $request->status, $request->reason);
+
+        return response()->json(['success' => true, 'message' => 'Status updated']);
+    });
 });
