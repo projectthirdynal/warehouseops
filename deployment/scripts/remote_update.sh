@@ -9,6 +9,10 @@ echo "[INFO] Installing dependencies..."
 cd $APP_DIR
 sudo -u www-data composer install --no-dev --optimize-autoloader
 
+echo "[INFO] Building frontend assets..."
+sudo -u www-data npm install
+sudo -u www-data npm run build
+
 echo "[INFO] Running migrations and clear cache..."
 sudo -u www-data php artisan migrate --force
 sudo -u www-data php artisan config:cache
