@@ -5,172 +5,151 @@
 
 @section('content')
     <!-- Page Header -->
-    <div class="section-header">
-        <h2>
-            <svg class="section-header-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="7" height="7"></rect>
-                <rect x="14" y="3" width="7" height="7"></rect>
-                <rect x="14" y="14" width="7" height="7"></rect>
-                <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-            Overview
-        </h2>
-        <p>Real-time waybill statistics and recent activity</p>
-    </div>
+    <x-page-header
+        title="Overview"
+        description="Real-time waybill statistics and recent activity"
+        icon="fas fa-th-large"
+    />
 
     <!-- Date Range Filter -->
-    <div class="filter-section">
-        <form method="GET" action="{{ route('dashboard') }}">
-            <div class="form-group">
-                <label for="start_date">From</label>
-                <input type="date" name="start_date" id="start_date" value="{{ $stats['start_date'] }}">
-            </div>
-            <div class="form-group">
-                <label for="end_date">To</label>
-                <input type="date" name="end_date" id="end_date" value="{{ $stats['end_date'] }}">
-            </div>
-            <button type="submit" class="btn btn-primary btn-sm">
-                <i class="fas fa-filter" style="font-size: 11px;"></i>
-                Apply Filter
-            </button>
-        </form>
-    </div>
+    <x-filter-bar action="{{ route('dashboard') }}">
+        <x-form.input
+            type="date"
+            name="start_date"
+            label="From"
+            :value="$stats['start_date']"
+            class="w-auto"
+        />
+        <x-form.input
+            type="date"
+            name="end_date"
+            label="To"
+            :value="$stats['end_date']"
+            class="w-auto"
+        />
+        <x-button type="submit" variant="primary" size="sm" icon="fas fa-filter">
+            Apply Filter
+        </x-button>
+    </x-filter-bar>
 
     <!-- Status Monitoring Grid -->
-    <div class="stats-grid stats-grid-4">
-        <article class="stat-card">
-            <div class="stat-content">
-                <h3>{{ number_format($stats['total_waybills']) }}</h3>
-                <p>Total Waybills</p>
-            </div>
-        </article>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <x-stat-card
+            :value="$stats['total_waybills']"
+            label="Total Waybills"
+            variant="cyan"
+            icon="fas fa-box"
+        />
 
-        <article class="stat-card stat-info">
-            <div class="stat-content">
-                <h3>{{ number_format($stats['in_transit']) }}</h3>
-                <p>In Transit</p>
-            </div>
-        </article>
+        <x-stat-card
+            :value="$stats['in_transit']"
+            label="In Transit"
+            variant="info"
+            icon="fas fa-truck"
+        />
 
-        <article class="stat-card stat-warning">
-            <div class="stat-content">
-                <h3>{{ number_format($stats['delivering']) }}</h3>
-                <p>Delivering</p>
-            </div>
-        </article>
+        <x-stat-card
+            :value="$stats['delivering']"
+            label="Delivering"
+            variant="warning"
+            icon="fas fa-motorcycle"
+        />
 
-        <article class="stat-card stat-success">
-            <div class="stat-content">
-                <h3>{{ number_format($stats['delivered']) }}</h3>
-                <p>Delivered</p>
-            </div>
-        </article>
+        <x-stat-card
+            :value="$stats['delivered']"
+            label="Delivered"
+            variant="success"
+            icon="fas fa-check-circle"
+        />
 
-        <article class="stat-card stat-returned">
-            <div class="stat-content">
-                <h3>{{ number_format($stats['returned']) }}</h3>
-                <p>Returned</p>
-            </div>
-        </article>
+        <x-stat-card
+            :value="$stats['returned']"
+            label="Returned"
+            variant="returned"
+            icon="fas fa-undo"
+        />
 
-        <article class="stat-card stat-info">
-            <div class="stat-content">
-                <h3>{{ number_format($stats['hq_scheduling']) }}</h3>
-                <p>HQ Scheduling</p>
-            </div>
-        </article>
+        <x-stat-card
+            :value="$stats['hq_scheduling']"
+            label="HQ Scheduling"
+            variant="info"
+            icon="fas fa-calendar-alt"
+        />
 
-        <article class="stat-card stat-pending">
-            <div class="stat-content">
-                <h3>{{ number_format($stats['pending']) }}</h3>
-                <p>Pending</p>
-            </div>
-        </article>
+        <x-stat-card
+            :value="$stats['pending']"
+            label="Pending"
+            variant="pending"
+            icon="fas fa-clock"
+        />
 
-        <article class="stat-card stat-dispatched">
-            <div class="stat-content">
-                <h3>{{ number_format($stats['dispatched']) }}</h3>
-                <p>Dispatched</p>
-            </div>
-        </article>
+        <x-stat-card
+            :value="$stats['dispatched']"
+            label="Dispatched"
+            variant="dispatched"
+            icon="fas fa-paper-plane"
+        />
     </div>
 
     <!-- Period Stats -->
-    <div class="stats-grid-secondary">
-        <article class="stat-card stat-success">
-            <div class="stat-content">
-                <h3>{{ number_format($stats['delivery_rate'], 1) }}<small style="font-size: 16px; opacity: 0.7;">%</small></h3>
-                <p>Delivery Rate</p>
-            </div>
-        </article>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mb-8">
+        <x-stat-card
+            :value="number_format($stats['delivery_rate'], 1)"
+            suffix="%"
+            label="Delivery Rate"
+            variant="success"
+            icon="fas fa-percentage"
+        />
 
-        <article class="stat-card stat-warning">
-            <div class="stat-content">
-                <h3>{{ number_format($stats['return_rate'], 1) }}<small style="font-size: 16px; opacity: 0.7;">%</small></h3>
-                <p>Return Rate</p>
-            </div>
-        </article>
+        <x-stat-card
+            :value="number_format($stats['return_rate'], 1)"
+            suffix="%"
+            label="Return Rate"
+            variant="warning"
+            icon="fas fa-exchange-alt"
+        />
     </div>
 
     <!-- Recent Scans Section -->
-    <section class="recent-scans">
-        <div class="section-header">
-            <h2>
-                <svg class="section-header-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="23 4 23 10 17 10"></polyline>
-                    <polyline points="1 20 1 14 7 14"></polyline>
-                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                </svg>
-                Recent Dispatch Activity
-            </h2>
-            <p>Latest scanned and dispatched waybills</p>
-        </div>
+    <x-page-header
+        title="Recent Dispatch Activity"
+        description="Latest scanned and dispatched waybills"
+        icon="fas fa-sync-alt"
+    />
 
-        <div class="table-container">
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Waybill Number</th>
-                            <th>Product</th>
-                            <th>Receiver</th>
-                            <th>Destination</th>
-                            <th>Scanned By</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($recentScans as $scan)
-                            <tr>
-                                <td>
-                                    <span class="waybill-badge">{{ $scan->waybill_number }}</span>
-                                </td>
-                                <td>{{ $scan->sender_name ?? '—' }}</td>
-                                <td>{{ $scan->receiver_name ?? '—' }}</td>
-                                <td>{{ $scan->destination ?? '—' }}</td>
-                                <td>
-                                    <span style="color: var(--text-secondary);">{{ $scan->scanned_by }}</span>
-                                </td>
-                                <td>
-                                    <span style="color: var(--text-tertiary); font-size: var(--text-xs);">
-                                        {{ \Carbon\Carbon::parse($scan->scan_date)->format('M d, Y • H:i') }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="empty-state">
-                                    <div style="padding: var(--space-6);">
-                                        <i class="fas fa-inbox" style="font-size: 28px; color: var(--text-muted); margin-bottom: var(--space-3); display: block;"></i>
-                                        <p style="margin-bottom: var(--space-1);">No scans yet</p>
-                                        <small style="color: var(--text-muted);">Start scanning waybills to see activity here</small>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </section>
+    <x-table>
+        <x-slot:head>
+            <x-table-th>Waybill Number</x-table-th>
+            <x-table-th>Product</x-table-th>
+            <x-table-th>Receiver</x-table-th>
+            <x-table-th>Destination</x-table-th>
+            <x-table-th>Scanned By</x-table-th>
+            <x-table-th>Date</x-table-th>
+        </x-slot:head>
+
+        @forelse($recentScans as $scan)
+            <tr class="hover:bg-dark-600 transition-colors">
+                <x-table-td>
+                    <x-waybill-badge :number="$scan->waybill_number" />
+                </x-table-td>
+                <x-table-td>{{ $scan->sender_name ?? '—' }}</x-table-td>
+                <x-table-td>{{ $scan->receiver_name ?? '—' }}</x-table-td>
+                <x-table-td>{{ $scan->destination ?? '—' }}</x-table-td>
+                <x-table-td class="text-slate-400">{{ $scan->scanned_by }}</x-table-td>
+                <x-table-td class="text-dark-100 text-xs">
+                    {{ \Carbon\Carbon::parse($scan->scan_date)->format('M d, Y • H:i') }}
+                </x-table-td>
+            </tr>
+        @empty
+            <tr>
+                <td colspan="6">
+                    <x-empty-state
+                        icon="fas fa-inbox"
+                        title="No scans yet"
+                        description="Start scanning waybills to see activity here"
+                    />
+                </td>
+            </tr>
+        @endforelse
+    </x-table>
 @endsection

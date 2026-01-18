@@ -44,28 +44,26 @@ class WaybillController extends Controller
             ->paginate($request->input('limit', 25))
             ->withQueryString();
 
-        // OPTIMIZED: Calculate all stats in a single query instead of 7 separate queries
-        $stats = \Illuminate\Support\Facades\DB::table('waybills')
-            ->selectRaw("
-                COUNT(*) as total,
-                COUNT(CASE WHEN status = 'in transit' THEN 1 END) as in_transit,
-                COUNT(CASE WHEN status = 'delivered' THEN 1 END) as delivered,
-                COUNT(CASE WHEN status = 'delivering' THEN 1 END) as delivering,
-                COUNT(CASE WHEN status IN ('returned', 'for return') THEN 1 END) as returned,
-                COUNT(CASE WHEN status = 'headquarters scheduling to outlets' THEN 1 END) as hq_scheduling,
-                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending
-            ")
-            ->first();
+        // Calculate stats for the 6-card grid (single optimized query)
+        $statusCounts = Waybill::selectRaw("
+            COUNT(*) as total,
+            SUM(CASE WHEN LOWER(status) = 'in transit' THEN 1 ELSE 0 END) as in_transit,
+            SUM(CASE WHEN LOWER(status) = 'delivered' THEN 1 ELSE 0 END) as delivered,
+            SUM(CASE WHEN LOWER(status) = 'delivering' THEN 1 ELSE 0 END) as delivering,
+            SUM(CASE WHEN LOWER(status) IN ('returned', 'for return') THEN 1 ELSE 0 END) as returned,
+            SUM(CASE WHEN LOWER(status) = 'headquarters scheduling to outlets' THEN 1 ELSE 0 END) as hq_scheduling,
+            SUM(CASE WHEN LOWER(status) = 'pending' THEN 1 ELSE 0 END) as pending
+        ")->first();
 
         $stats = [
-            'total' => $stats->total ?? 0,
-            'dispatched' => 0,
-            'in_transit' => $stats->in_transit ?? 0,
-            'delivered' => $stats->delivered ?? 0,
-            'delivering' => $stats->delivering ?? 0,
-            'returned' => $stats->returned ?? 0,
-            'hq_scheduling' => $stats->hq_scheduling ?? 0,
-            'pending' => $stats->pending ?? 0,
+            'total' => $statusCounts->total ?? 0,
+            'dispatched' => 0, // Status not used in current workflow
+            'in_transit' => $statusCounts->in_transit ?? 0,
+            'delivered' => $statusCounts->delivered ?? 0,
+            'delivering' => $statusCounts->delivering ?? 0,
+            'returned' => $statusCounts->returned ?? 0,
+            'hq_scheduling' => $statusCounts->hq_scheduling ?? 0,
+            'pending' => $statusCounts->pending ?? 0,
         ];
 
         // Cache product options (rarely changes)
@@ -73,25 +71,25 @@ class WaybillController extends Controller
             return Waybill::whereNotNull('item_name')->distinct()->orderBy('item_name')->pluck('item_name');
         });
 
-        // OPTIMIZED: Batch load phone order counts instead of N+1 queries
-        $receiverPhones = $waybills->pluck('receiver_phone')->unique()->filter()->values()->toArray();
+        // Batch query: Get all unique phone numbers from current page
+        $phones = $waybills->pluck('receiver_phone')->filter()->unique()->values();
 
+        // Batch count orders per phone (single query)
         $phoneOrderCounts = [];
-        if (!empty($receiverPhones)) {
-            $phoneOrderCounts = \Illuminate\Support\Facades\DB::table('waybills')
-                ->select('receiver_phone', \Illuminate\Support\Facades\DB::raw('COUNT(*) as order_count'))
-                ->whereIn('receiver_phone', $receiverPhones)
+        if ($phones->isNotEmpty()) {
+            $phoneOrderCounts = Waybill::selectRaw('receiver_phone, COUNT(*) as order_count')
+                ->whereIn('receiver_phone', $phones)
                 ->groupBy('receiver_phone')
                 ->pluck('order_count', 'receiver_phone')
                 ->toArray();
         }
 
-        // OPTIMIZED: Batch load customers instead of N+1 queries
+        // Batch fetch customers by phone (single query)
         $customers = [];
-        if (!empty($receiverPhones)) {
-            $customers = \App\Models\Customer::where(function ($q) use ($receiverPhones) {
-                $q->whereIn('phone_primary', $receiverPhones)
-                    ->orWhereIn('phone_secondary', $receiverPhones);
+        if ($phones->isNotEmpty()) {
+            $customers = \App\Models\Customer::where(function ($q) use ($phones) {
+                $q->whereIn('phone_primary', $phones)
+                  ->orWhereIn('phone_secondary', $phones);
             })->get()->keyBy(function ($customer) {
                 return $customer->phone_primary;
             });
@@ -104,7 +102,7 @@ class WaybillController extends Controller
             }
         }
 
-        // Attach pre-loaded data to waybills (no additional queries)
+        // Attach data to waybills (no additional queries)
         foreach ($waybills as $waybill) {
             $phone = $waybill->receiver_phone;
             $waybill->total_customer_orders = $phoneOrderCounts[$phone] ?? 0;

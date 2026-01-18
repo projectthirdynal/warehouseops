@@ -67,15 +67,17 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // ============================
-// Courier Webhook Routes (Public - authenticated via API key)
+// Courier Webhook Routes (Authenticated via API key + rate limited)
 // ============================
-Route::prefix('courier')->group(function () {
-    // J&T Express webhook
-    Route::post('/jnt/webhook', [\App\Http\Controllers\Api\CourierWebhookController::class, 'handleJnt']);
-    
-    // Generic courier webhook handler
-    Route::post('/{courierCode}/webhook', [\App\Http\Controllers\Api\CourierWebhookController::class, 'handleGeneric']);
-});
+Route::prefix('courier')
+    ->middleware(['webhook.verify', 'throttle:60,1'])
+    ->group(function () {
+        // J&T Express webhook
+        Route::post('/jnt/webhook', [\App\Http\Controllers\Api\CourierWebhookController::class, 'handleJnt']);
+
+        // Generic courier webhook handler
+        Route::post('/{courierCode}/webhook', [\App\Http\Controllers\Api\CourierWebhookController::class, 'handleGeneric']);
+    });
 
 // Manual status update (authenticated)
 Route::middleware('auth:sanctum')->group(function () {

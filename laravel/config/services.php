@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'courier' => [
+        'webhook_key' => env('COURIER_WEBHOOK_KEY'),
+    ],
+
 ];

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use App\Models\Waybill;
 use App\Models\ScannedWaybill;
 use Carbon\Carbon;
@@ -15,24 +17,46 @@ class DashboardController extends Controller
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
 
-        // Real-time Status Counts
+        // Cache key based on date range
+        $cacheKey = "dashboard_stats_{$startDate}_{$endDate}";
+
+        // Get status counts with a single optimized query (cached for 60 seconds)
+        $statusCounts = Cache::remember('dashboard_status_counts', 60, function () {
+            return Waybill::selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN LOWER(status) = 'in transit' THEN 1 ELSE 0 END) as in_transit,
+                SUM(CASE WHEN LOWER(status) = 'delivered' THEN 1 ELSE 0 END) as delivered,
+                SUM(CASE WHEN LOWER(status) = 'delivering' THEN 1 ELSE 0 END) as delivering,
+                SUM(CASE WHEN LOWER(status) IN ('returned', 'for return') THEN 1 ELSE 0 END) as returned,
+                SUM(CASE WHEN LOWER(status) = 'headquarters scheduling to outlets' THEN 1 ELSE 0 END) as hq_scheduling,
+                SUM(CASE WHEN LOWER(status) = 'pending' THEN 1 ELSE 0 END) as pending
+            ")->first();
+        });
+
+        // Period-based stats (shorter cache since date-dependent)
+        $periodStats = Cache::remember($cacheKey, 30, function () use ($startDate, $endDate) {
+            return Waybill::selectRaw("
+                SUM(CASE WHEN LOWER(status) = 'delivered' THEN 1 ELSE 0 END) as delivered_period,
+                SUM(CASE WHEN LOWER(status) IN ('returned', 'for return') THEN 1 ELSE 0 END) as returned_period
+            ")
+            ->whereBetween('signing_time', [
+                Carbon::parse($startDate)->startOfDay(),
+                Carbon::parse($endDate)->endOfDay()
+            ])
+            ->first();
+        });
+
         $stats = [
-            'total_waybills' => Waybill::count(),
+            'total_waybills' => $statusCounts->total ?? 0,
             'dispatched' => 0, // Status not used in current workflow
-            'in_transit' => Waybill::where('status', 'in transit')->count(),
-            'delivered' => Waybill::where('status', 'delivered')->count(),
-            'delivering' => Waybill::where('status', 'delivering')->count(),
-            'returned' => Waybill::whereIn('status', ['returned', 'for return'])->count(),
-            'hq_scheduling' => Waybill::where('status', 'headquarters scheduling to outlets')->count(),
-            'pending' => Waybill::where('status', 'pending')->count(),
-            
-            // Period-based stats for delivery/return rates
-            'delivered_period' => Waybill::where('status', 'delivered')
-                ->whereBetween('signing_time', [Carbon::parse($startDate)->startOfDay(), Carbon::parse($endDate)->endOfDay()])
-                ->count(),
-            'returned_period' => Waybill::whereIn('status', ['returned', 'for return'])
-                ->whereBetween('signing_time', [Carbon::parse($startDate)->startOfDay(), Carbon::parse($endDate)->endOfDay()])
-                ->count(),
+            'in_transit' => $statusCounts->in_transit ?? 0,
+            'delivered' => $statusCounts->delivered ?? 0,
+            'delivering' => $statusCounts->delivering ?? 0,
+            'returned' => $statusCounts->returned ?? 0,
+            'hq_scheduling' => $statusCounts->hq_scheduling ?? 0,
+            'pending' => $statusCounts->pending ?? 0,
+            'delivered_period' => $periodStats->delivered_period ?? 0,
+            'returned_period' => $periodStats->returned_period ?? 0,
             'start_date' => $startDate,
             'end_date' => $endDate
         ];

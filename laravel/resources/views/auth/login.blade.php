@@ -3,196 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Login - Warehouse System</title>
-    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
-    <style>
-        body {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg-primary);
-            margin: 0;
-            padding: var(--space-4);
-        }
-
-        .login-container {
-            width: 100%;
-            max-width: 420px;
-        }
-
-        .login-card {
-            background: var(--bg-secondary);
-            border-radius: var(--radius-xl);
-            padding: var(--space-8);
-            border: 1px solid var(--border-primary);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        .login-header {
-            text-align: center;
-            margin-bottom: var(--space-8);
-        }
-
-        .login-header h1 {
-            font-size: var(--text-2xl);
-            font-weight: var(--font-bold);
-            color: var(--text-primary);
-            margin: 0 0 var(--space-2) 0;
-        }
-
-        .login-header p {
-            color: var(--text-secondary);
-            font-size: var(--text-sm);
-            margin: 0;
-        }
-
-        .form-group {
-            margin-bottom: var(--space-5);
-        }
-
-        .form-group label {
-            display: block;
-            font-size: var(--text-sm);
-            font-weight: var(--font-medium);
-            color: var(--text-primary);
-            margin-bottom: var(--space-2);
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: var(--space-3) var(--space-4);
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-secondary);
-            border-radius: var(--radius-md);
-            color: var(--text-primary);
-            font-size: var(--text-base);
-            transition: all var(--transition-fast);
-            box-sizing: border-box;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-        }
-
-        .form-group input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .btn-login {
-            width: 100%;
-            padding: var(--space-3) var(--space-4);
-            background: var(--accent-primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: var(--text-base);
-            font-weight: var(--font-semibold);
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .btn-login:hover {
-            background: var(--accent-primary-hover);
-            transform: translateY(-1px);
-        }
-
-        .btn-login:active {
-            transform: translateY(0);
-        }
-
-        .login-footer {
-            text-align: center;
-            margin-top: var(--space-6);
-            color: var(--text-muted);
-            font-size: var(--text-sm);
-        }
-
-        .error-message {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid var(--status-error);
-            color: var(--status-error);
-            padding: var(--space-3) var(--space-4);
-            border-radius: var(--radius-md);
-            margin-bottom: var(--space-5);
-            font-size: var(--text-sm);
-        }
-
-        .remember-group {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            margin-bottom: var(--space-5);
-        }
-
-        .remember-group input[type="checkbox"] {
-            width: auto;
-            accent-color: var(--accent-primary);
-        }
-
-        .remember-group label {
-            margin: 0;
-            font-size: var(--text-sm);
-            color: var(--text-secondary);
-        }
-    </style>
+    <title>Login - Thirdynal Warehouse</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-    <div class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <h1>Welcome Back</h1>
-                <p>Sign in to access the Warehouse System</p>
-            </div>
+<body class="bg-dark-900 min-h-screen flex items-center justify-center p-4 selection:bg-gold-500 selection:text-white">
+    
+    <!-- Background Effects -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-gold-500/5 blur-[120px]"></div>
+        <div class="absolute -bottom-[20%] -right-[10%] w-[50%] h-[50%] rounded-full bg-blue-600/5 blur-[120px]"></div>
+    </div>
 
+    <div class="w-full max-w-md relative z-10">
+        <!-- Logo Section -->
+        <div class="text-center mb-8 animate-fade-in-down">
+            <div class="inline-flex items-center justify-center p-1 rounded-2xl bg-gradient-to-br from-dark-700 to-dark-800 border border-dark-600 shadow-2xl mb-6">
+                <img src="{{ asset('images/org_logo.jpg') }}" alt="Organization Logo" class="h-24 w-auto rounded-xl">
+            </div>
+            <h1 class="text-3xl font-bold text-white tracking-tight mb-2">Welcome Back</h1>
+            <p class="text-slate-400">Sign in to your dashboard</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-dark-800/50 backdrop-blur-xl border border-dark-700 rounded-2xl p-8 shadow-xl animate-fade-in-up">
             @if ($errors->any())
-                <div class="error-message">
-                    @foreach ($errors->all() as $error)
-                        {{ $error }}<br>
-                    @endforeach
+                <div class="mb-6 p-4 rounded-xl bg-error-500/10 border border-error-500/20 flex items-start gap-3">
+                    <i class="fas fa-circle-exclamation text-error-400 mt-0.5"></i>
+                    <div class="text-sm text-error-400">
+                        @foreach ($errors->all() as $error)
+                            <p>{{ $error }}</p>
+                        @endforeach
+                    </div>
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('login') }}">
+            <form method="POST" action="{{ route('login') }}" class="space-y-6">
                 @csrf
                 
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input 
-                        type="text" 
-                        id="username" 
-                        name="username" 
-                        placeholder="Enter username"
-                        value="{{ old('username') }}"
-                        required
-                        autofocus
-                    >
+                <div class="space-y-2">
+                    <label for="username" class="text-xs font-semibold uppercase tracking-wider text-slate-400 ml-1">Username</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-slate-500 group-focus-within:text-gold-400 transition-colors"></i>
+                        </div>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            class="w-full bg-dark-900/50 border border-dark-600 text-white text-sm rounded-xl focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 block w-full pl-11 p-3.5 placeholder-slate-600 transition-all" 
+                            placeholder="Enter your username" 
+                            value="{{ old('username') }}"
+                            required 
+                            autofocus
+                        >
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        name="password" 
-                        placeholder="Enter password"
-                        required
-                    >
+                <div class="space-y-2">
+                    <label for="password" class="text-xs font-semibold uppercase tracking-wider text-slate-400 ml-1">Password</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-slate-500 group-focus-within:text-gold-400 transition-colors"></i>
+                        </div>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            class="w-full bg-dark-900/50 border border-dark-600 text-white text-sm rounded-xl focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 block w-full pl-11 p-3.5 placeholder-slate-600 transition-all" 
+                            placeholder="Enter your password" 
+                            required
+                        >
+                    </div>
                 </div>
 
-                <div class="remember-group">
-                    <input type="checkbox" id="remember" name="remember">
-                    <label for="remember">Remember me</label>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input id="remember" name="remember" type="checkbox" class="w-4 h-4 rounded border-dark-600 bg-dark-900 text-gold-500 focus:ring-gold-500/20 focus:ring-offset-0">
+                        <label for="remember" class="ml-2 block text-sm text-slate-400 hover:text-slate-300 cursor-pointer transition-colors">Remember me</label>
+                    </div>
                 </div>
 
-                <button type="submit" class="btn-login">Sign In</button>
+                <button type="submit" class="w-full group relative flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500 shadow-lg shadow-gold-500/20 hover:shadow-gold-500/30 transition-all duration-200">
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <i class="fas fa-arrow-right text-gold-200 group-hover:text-white transition-colors group-hover:translate-x-1 duration-200"></i>
+                    </span>
+                    Sign In
+                </button>
             </form>
-
-
         </div>
+
+        <p class="mt-8 text-center text-xs text-slate-500">
+            &copy; {{ date('Y') }} Organization Name. All rights reserved.
+        </p>
     </div>
 </body>
 </html>

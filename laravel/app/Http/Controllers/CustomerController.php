@@ -7,6 +7,7 @@ use App\Models\Lead;
 use App\Models\LeadRecyclingPool;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class CustomerController extends Controller
@@ -17,6 +18,13 @@ class CustomerController extends Controller
      */
     public function show(string $customerId)
     {
+        $user = Auth::user();
+
+        // Authorization: User must have leads_view permission or be an admin
+        if (!$user->canAccess('leads_view') && !$user->canAccess('leads_manage')) {
+            abort(403, 'Unauthorized access to customer profiles.');
+        }
+
         $customer = Customer::with([
             'orderHistory' => function ($query) {
                 $query->orderBy('created_at', 'desc')->limit(50);
@@ -77,6 +85,11 @@ class CustomerController extends Controller
      */
     public function blacklist(Request $request, string $customerId)
     {
+        // Authorization: Only admins can blacklist customers
+        if (!Auth::user()->canAccess('leads_manage')) {
+            abort(403, 'Unauthorized to blacklist customers.');
+        }
+
         $customer = Customer::findOrFail($customerId);
 
         $request->validate([
@@ -108,6 +121,11 @@ class CustomerController extends Controller
      */
     public function unblacklist(string $customerId)
     {
+        // Authorization: Only admins can unblacklist customers
+        if (!Auth::user()->canAccess('leads_manage')) {
+            abort(403, 'Unauthorized to modify customer blacklist status.');
+        }
+
         $customer = Customer::findOrFail($customerId);
 
         $customer->update([
@@ -129,6 +147,11 @@ class CustomerController extends Controller
      */
     public function createLead(Request $request, string $customerId)
     {
+        // Authorization: Require leads_create permission
+        if (!Auth::user()->canAccess('leads_create') && !Auth::user()->canAccess('leads_manage')) {
+            abort(403, 'Unauthorized to create leads.');
+        }
+
         $customer = Customer::findOrFail($customerId);
 
         $request->validate([
@@ -180,6 +203,11 @@ class CustomerController extends Controller
      */
     public function update(Request $request, string $customerId)
     {
+        // Authorization: Require leads_manage permission
+        if (!Auth::user()->canAccess('leads_manage')) {
+            abort(403, 'Unauthorized to update customer information.');
+        }
+
         $customer = Customer::findOrFail($customerId);
 
         $request->validate([

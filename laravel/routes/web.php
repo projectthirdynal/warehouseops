@@ -94,6 +94,22 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 
+    // IT Support / Ticketing
+    Route::resource('tickets', App\Http\Controllers\TicketController::class);
+    Route::post('tickets/{id}/message', [App\Http\Controllers\TicketMessageController::class, 'store'])->name('tickets.message.store');
+    Route::get('/tickets/{id}/messages', [App\Http\Controllers\TicketMessageController::class, 'fetchMessages'])->name('tickets.messages.fetch');
+    Route::post('/tickets/{id}/typing', [App\Http\Controllers\TicketMessageController::class, 'typing'])->name('tickets.typing');
+    Route::post('/tickets/{id}/worklogs', [App\Http\Controllers\TicketWorklogController::class, 'store'])->name('tickets.worklogs.store');
+    
+    // Knowledge Base
+    Route::resource('articles', App\Http\Controllers\ArticleController::class);
+    Route::get('tickets/{id}/to-article', [App\Http\Controllers\ArticleController::class, 'createFromTicket'])->name('articles.createFromTicket');
+
+    // Reports
+    Route::get('/reports/tickets/export', [App\Http\Controllers\TicketReportController::class, 'export'])->name('reports.tickets.export');
+    Route::get('/reports/tickets', [App\Http\Controllers\TicketReportController::class, 'index'])->name('reports.tickets.index');
+
+
     // Lead Management
     Route::resource('leads', LeadController::class);
     Route::post('leads/check-duplicates', [LeadController::class, 'checkDuplicates'])->name('leads.check-duplicates');

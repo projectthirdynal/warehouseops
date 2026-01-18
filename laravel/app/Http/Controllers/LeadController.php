@@ -119,7 +119,7 @@ class LeadController extends Controller
      */
     public function mine(Request $request)
     {
-        set_time_limit(0); // Prevent PHP timeout for large datasets
+        set_time_limit(300); // Allow up to 5 minutes for large datasets
 
         // Validate only if parameters are provided, otherwise use defaults
         $request->validate([
@@ -137,58 +137,56 @@ class LeadController extends Controller
         $userId = Auth::id();
 
         Log::info("Lead Mining Started: Status=$status, Range=$start to $end, AssignedTo=$assignedTo");
-        
-        $itemFilter = $request->filled('previous_item') ? " AND item_name = :item_name " : "";
-
-        $sql = "
-            INSERT INTO leads (name, phone, address, city, state, barangay, street, previous_item, status, uploaded_by, assigned_to, created_at, updated_at)
-            SELECT DISTINCT ON (receiver_phone)
-                receiver_name, 
-                receiver_phone, 
-                receiver_address, 
-                city, 
-                province,
-                barangay,
-                street,
-                item_name,
-                'NEW', 
-                :uploaded_by, 
-                :assigned_to, 
-                NOW(), 
-                NOW()
-            FROM waybills 
-            WHERE status ILIKE :status 
-            AND signing_time BETWEEN :start AND :end
-            AND receiver_phone IS NOT NULL 
-            AND receiver_phone != ''
-            {$itemFilter}
-            ORDER BY receiver_phone, signing_time DESC
-            ON CONFLICT (phone) WHERE status NOT IN ('SALE', 'DELIVERED', 'CANCELLED') 
-            DO UPDATE SET 
-                street = COALESCE(leads.street, EXCLUDED.street),
-                barangay = COALESCE(leads.barangay, EXCLUDED.barangay),
-                city = COALESCE(leads.city, EXCLUDED.city),
-                state = COALESCE(leads.state, EXCLUDED.state),
-                previous_item = COALESCE(leads.previous_item, EXCLUDED.previous_item),
-                updated_at = NOW()
-            WHERE leads.street IS NULL OR leads.barangay IS NULL OR leads.previous_item IS NULL
-        ";
 
         try {
-            $params = [
-                'uploaded_by' => $userId,
-                'assigned_to' => $assignedTo,
-                'status'      => $status,
-                'start'       => $start,
-                'end'         => $end
-            ];
-            
+            // Build the query using query builder for the source data (safer than raw SQL concatenation)
+            $sourceQuery = DB::table('waybills')
+                ->selectRaw('DISTINCT ON (receiver_phone) receiver_name, receiver_phone, receiver_address, city, province, barangay, street, item_name')
+                ->whereRaw('status ILIKE ?', [$status])
+                ->whereBetween('signing_time', [$start, $end])
+                ->whereNotNull('receiver_phone')
+                ->where('receiver_phone', '!=', '');
+
+            // Add item filter if provided (using parameterized query)
             if ($request->filled('previous_item')) {
-                $params['item_name'] = $request->previous_item;
+                $sourceQuery->where('item_name', $request->previous_item);
             }
 
+            // Build the raw SQL with proper parameterization (no string concatenation for user input)
+            $sql = "
+                INSERT INTO leads (name, phone, address, city, state, barangay, street, previous_item, status, uploaded_by, assigned_to, created_at, updated_at)
+                SELECT
+                    receiver_name,
+                    receiver_phone,
+                    receiver_address,
+                    city,
+                    province,
+                    barangay,
+                    street,
+                    item_name,
+                    'NEW',
+                    ?,
+                    ?,
+                    NOW(),
+                    NOW()
+                FROM ({$sourceQuery->toSql()}) AS source_waybills
+                ORDER BY receiver_phone
+                ON CONFLICT (phone) WHERE status NOT IN ('SALE', 'DELIVERED', 'CANCELLED')
+                DO UPDATE SET
+                    street = COALESCE(leads.street, EXCLUDED.street),
+                    barangay = COALESCE(leads.barangay, EXCLUDED.barangay),
+                    city = COALESCE(leads.city, EXCLUDED.city),
+                    state = COALESCE(leads.state, EXCLUDED.state),
+                    previous_item = COALESCE(leads.previous_item, EXCLUDED.previous_item),
+                    updated_at = NOW()
+                WHERE leads.street IS NULL OR leads.barangay IS NULL OR leads.previous_item IS NULL
+            ";
+
+            // Merge all bindings in correct order
+            $bindings = array_merge([$userId, $assignedTo], $sourceQuery->getBindings());
+
             // Execute the statement
-            DB::statement($sql, $params);
+            DB::statement($sql, $bindings);
             Log::info("Lead Mining Completed Successfully");
         } catch (\Exception $e) {
             Log::error("Lead Mining Failed: " . $e->getMessage());
@@ -303,7 +301,7 @@ class LeadController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = substr($request->search, 0, 100); // Limit search input length
             $query->where(function($q) use ($search) {
                 $q->where('name', 'ilike', "%{$search}%")
                   ->orWhere('phone', 'ilike', "%{$search}%");
@@ -385,17 +383,33 @@ class LeadController extends Controller
             abort(403);
         }
 
+        // Define valid statuses
+        $validStatuses = [
+            Lead::STATUS_NEW,
+            Lead::STATUS_CALLING,
+            Lead::STATUS_NO_ANSWER,
+            Lead::STATUS_REJECT,
+            Lead::STATUS_CALLBACK,
+            Lead::STATUS_SALE,
+            Lead::STATUS_REORDER,
+            Lead::STATUS_DELIVERED,
+            Lead::STATUS_RETURNED,
+            Lead::STATUS_REJECTED,
+            Lead::STATUS_CANCELLED,
+            Lead::STATUS_ARCHIVED,
+        ];
+
         $request->validate([
-            'status' => 'required|string',
-            'note' => 'nullable|string',
-            'product_name' => 'nullable|string',
-            'product_brand' => 'nullable|string',
-            'amount' => 'nullable|numeric',
-            'address' => 'nullable|string',
-            'province' => 'nullable|string',
-            'city' => 'nullable|string',
-            'barangay' => 'nullable|string',
-            'street' => 'nullable|string'
+            'status' => 'required|string|in:' . implode(',', $validStatuses),
+            'note' => 'nullable|string|max:2000',
+            'product_name' => 'nullable|string|max:255',
+            'product_brand' => 'nullable|string|max:255',
+            'amount' => 'nullable|numeric|min:0|max:999999.99',
+            'address' => 'nullable|string|max:500',
+            'province' => 'nullable|string|max:100',
+            'city' => 'nullable|string|max:100',
+            'barangay' => 'nullable|string|max:100',
+            'street' => 'nullable|string|max:255'
         ]);
 
         try {
@@ -420,7 +434,7 @@ class LeadController extends Controller
     {
         $request->validate([
             'agent_id' => 'required|exists:users,id',
-            'lead_ids' => 'required|array', // e.g., [1, 2, 3] or "all_selected" logic
+            'lead_ids' => 'required|array|max:500', // Limit bulk operations to 500 leads
             'lead_ids.*' => 'exists:leads,id'
         ]);
 
@@ -464,7 +478,7 @@ class LeadController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = substr($request->search, 0, 100); // Limit search input length
             $query->where(function($q) use ($search) {
                 $q->where('name', 'ilike', "%{$search}%")
                   ->orWhere('phone', 'ilike', "%{$search}%");

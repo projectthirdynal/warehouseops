@@ -31,8 +31,14 @@ class CourierWebhookController extends Controller
         // Validate webhook signature if provided
         $signature = $request->header('X-JNT-Signature') ?? $request->header('Authorization');
         if (!$courierService->validateWebhook($request->all(), $signature)) {
-            Log::warning('J&T Webhook signature validation failed');
-            // Continue processing for now, log warning
+            Log::warning('J&T Webhook signature validation failed', [
+                'ip' => $request->ip(),
+                'payload' => $request->all(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid webhook signature'
+            ], 401);
         }
 
         // Parse the webhook payload
@@ -101,6 +107,19 @@ class CourierWebhookController extends Controller
         }
 
         $courierService = CourierFactory::make($courierCode);
+
+        // Validate webhook signature
+        $signature = $request->header('X-Webhook-Signature') ?? $request->header('Authorization');
+        if (!$courierService->validateWebhook($request->all(), $signature)) {
+            Log::warning("Courier {$courierCode} webhook signature validation failed", [
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid webhook signature'
+            ], 401);
+        }
+
         $parsed = $courierService->parseWebhookPayload($request->all());
 
         if (empty($parsed['waybill_no'])) {

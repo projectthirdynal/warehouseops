@@ -5,116 +5,97 @@
 
 @section('content')
     <!-- Page Header -->
-    <div class="section-header">
-        <h2>
-            <svg class="section-header-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-            Pending Waybills
-        </h2>
-        <p>Waybills awaiting processing or dispatch</p>
-    </div>
+    <x-page-header
+        title="Pending Waybills"
+        description="Waybills awaiting processing or dispatch"
+        icon="fas fa-clock"
+    />
 
     <!-- Stats Grid -->
-    <div class="stats-grid stats-grid-3">
-        <article class="stat-card">
-            <div class="stat-content">
-                <h3 id="totalPendingStat">{{ $pendingCount }}</h3>
-                <p>Total Pending</p>
-            </div>
-        </article>
-
-        <article class="stat-card stat-info">
-            <div class="stat-content">
-                <h3 id="todayPendingStat">0</h3>
-                <p>Added Today</p>
-            </div>
-        </article>
-
-        <article class="stat-card stat-warning">
-            <div class="stat-content">
-                <h3 id="oldPendingStat">0</h3>
-                <p>Over 7 Days</p>
-            </div>
-        </article>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <x-stat-card
+            value="{{ $pendingCount }}"
+            label="Total Pending"
+            variant="cyan"
+            icon="fas fa-layer-group"
+            id="totalPendingStat"
+        />
+        <x-stat-card
+            value="0"
+            label="Added Today"
+            variant="info"
+            icon="fas fa-calendar-day"
+            id="todayPendingStat"
+        />
+        <x-stat-card
+            value="0"
+            label="Over 7 Days"
+            variant="warning"
+            icon="fas fa-exclamation-triangle"
+            id="oldPendingStat"
+        />
     </div>
 
     <!-- Search Filter -->
-    <div class="search-filter">
-        <form class="filter-form" onsubmit="return false;">
-            <input
+    <div class="bg-dark-700 border border-dark-500 rounded-xl p-4 mb-5">
+        <form class="flex flex-wrap items-end gap-3" onsubmit="return false;">
+            <x-form.input
                 type="text"
                 id="searchInput"
+                name="search"
                 placeholder="Search waybill, sender, receiver, or destination..."
-            >
-            <button type="button" id="searchBtn" class="btn btn-primary btn-sm">
-                <i class="fas fa-search" style="font-size: 11px;"></i>
+                class="flex-1 min-w-[240px]"
+            />
+            <x-button type="button" id="searchBtn" variant="primary" size="sm" icon="fas fa-search">
                 Search
-            </button>
-            <button type="button" id="refreshListBtn" class="btn btn-secondary btn-sm">
-                <i class="fas fa-arrows-rotate" style="font-size: 11px;"></i>
+            </x-button>
+            <x-button type="button" id="refreshListBtn" variant="secondary" size="sm" icon="fas fa-arrows-rotate">
                 Refresh
-            </button>
+            </x-button>
         </form>
     </div>
 
     <!-- Data Table -->
-    <div class="table-container">
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Waybill Number</th>
-                        <th>Sender</th>
-                        <th>Receiver</th>
-                        <th>Destination</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody id="issuesList">
-                    <tr>
-                        <td colspan="6" class="loading">Loading...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+    <x-table>
+        <x-slot:head>
+            <x-table-th>Waybill Number</x-table-th>
+            <x-table-th>Sender</x-table-th>
+            <x-table-th>Receiver</x-table-th>
+            <x-table-th>Destination</x-table-th>
+            <x-table-th>Status</x-table-th>
+            <x-table-th>Date</x-table-th>
+        </x-slot:head>
 
-        <!-- Pagination -->
-        <div class="pagination-controls">
-            <div class="pagination-info" style="flex: 1;">
-                <span id="startRow">0</span> - <span id="endRow">0</span> of <span id="totalRows">0</span>
+        <tbody id="issuesList">
+            <tr>
+                <td colspan="6" class="px-4 py-8 text-center text-dark-100">Loading...</td>
+            </tr>
+        </tbody>
+
+        <x-slot:footer>
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="text-sm text-dark-100">
+                    <span id="startRow">0</span> - <span id="endRow">0</span> of <span id="totalRows">0</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="rowsPerPage" class="h-9 px-3 bg-dark-800 border border-dark-400 rounded-lg text-sm text-white min-w-[80px]">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <x-button type="button" id="prevPageBtn" variant="secondary" size="icon-sm" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </x-button>
+                    <span id="pageIndicator" class="text-sm text-dark-100">1 / 1</span>
+                    <x-button type="button" id="nextPageBtn" variant="secondary" size="icon-sm" disabled>
+                        <i class="fas fa-chevron-right"></i>
+                    </x-button>
+                </div>
             </div>
-            <div class="d-flex align-items-center gap-3">
-                <select id="rowsPerPage" class="rows-select">
-                    <option value="10">10</option>
-                    <option value="25" selected>25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                <button id="prevPageBtn" class="btn-page" disabled>
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <span id="pageIndicator" class="page-info">1 / 1</span>
-                <button id="nextPageBtn" class="btn-page" disabled>
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-        </div>
-    </div>
+        </x-slot:footer>
+    </x-table>
 @endsection
-
-@push('styles')
-<style>
-    .rows-select {
-        width: auto;
-        min-width: 80px;
-        height: 36px;
-        font-size: var(--text-sm);
-    }
-</style>
-@endpush
 
 @push('scripts')
 <script>
@@ -170,7 +151,7 @@
         });
 
         function loadIssues(page = 1) {
-            issuesList.innerHTML = '<tr><td colspan="6" class="loading">Loading...</td></tr>';
+            issuesList.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-dark-100">Loading...</td></tr>';
 
             let url = `/pending/list?page=${page}&limit=${perPage}`;
             if (searchQuery) {
@@ -185,12 +166,12 @@
                     if (!data.data || data.data.length === 0) {
                         issuesList.innerHTML = `
                             <tr>
-                                <td colspan="6" class="empty-state">
-                                    <div style="padding: var(--space-6);">
-                                        <i class="fas fa-check-circle" style="font-size: 28px; color: var(--accent-green); margin-bottom: var(--space-3); display: block;"></i>
-                                        <p style="margin-bottom: var(--space-1);">All Caught Up!</p>
-                                        <small style="color: var(--text-muted);">No pending waybills found</small>
+                                <td colspan="6" class="px-4 py-12 text-center">
+                                    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-success-100 flex items-center justify-center">
+                                        <i class="fas fa-check-circle text-2xl text-success-500"></i>
                                     </div>
+                                    <h3 class="text-lg font-medium text-white mb-1">All Caught Up!</h3>
+                                    <p class="text-sm text-dark-100">No pending waybills found</p>
                                 </td>
                             </tr>
                         `;
@@ -219,13 +200,14 @@
 
                         const row = document.createElement('tr');
                         row.id = `row-${waybill.waybill_number}`;
+                        row.className = 'hover:bg-dark-600 transition-colors';
                         row.innerHTML = `
-                            <td><span class="waybill-badge">${waybill.waybill_number}</span></td>
-                            <td>${waybill.sender_name || '—'}</td>
-                            <td>${waybill.receiver_name || '—'}</td>
-                            <td>${waybill.destination || '—'}</td>
-                            <td><span class="badge badge-pending">Pending</span></td>
-                            <td style="color: var(--text-tertiary); font-size: var(--text-xs);">${new Date(waybill.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                            <td class="px-4 py-3 text-sm"><span class="inline-flex items-center bg-info-100 text-info-500 px-2.5 py-1 rounded text-xs font-semibold font-mono tracking-tight border border-info-200">${waybill.waybill_number}</span></td>
+                            <td class="px-4 py-3 text-sm text-slate-200">${waybill.sender_name || '—'}</td>
+                            <td class="px-4 py-3 text-sm text-slate-200">${waybill.receiver_name || '—'}</td>
+                            <td class="px-4 py-3 text-sm text-slate-200">${waybill.destination || '—'}</td>
+                            <td class="px-4 py-3 text-sm"><span class="inline-flex items-center px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide bg-dark-500/50 text-dark-100 border border-dark-400 rounded-md">Pending</span></td>
+                            <td class="px-4 py-3 text-xs text-dark-100">${new Date(waybill.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                         `;
                         issuesList.appendChild(row);
                     });
@@ -234,7 +216,7 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    issuesList.innerHTML = '<tr><td colspan="6" class="empty-state text-danger">Error loading data</td></tr>';
+                    issuesList.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-error-500">Error loading data</td></tr>';
                 });
         }
 
@@ -249,9 +231,13 @@
         }
 
         function updateStats(total, today, old) {
-            document.getElementById('totalPendingStat').textContent = total;
-            document.getElementById('todayPendingStat').textContent = today;
-            document.getElementById('oldPendingStat').textContent = old;
+            const totalEl = document.getElementById('totalPendingStat');
+            const todayEl = document.getElementById('todayPendingStat');
+            const oldEl = document.getElementById('oldPendingStat');
+
+            if (totalEl) totalEl.querySelector('h3')?.textContent = total;
+            if (todayEl) todayEl.querySelector('h3')?.textContent = today;
+            if (oldEl) oldEl.querySelector('h3')?.textContent = old;
         }
     });
 </script>

@@ -5,178 +5,87 @@
 
 @section('content')
     <!-- Page Header -->
-    <div class="section-header">
-        <h2>
-            <svg class="section-header-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            Upload Waybills
-        </h2>
-        <p>Upload Excel or CSV files containing waybill data</p>
-    </div>
+    <x-page-header
+        title="Upload Waybills"
+        description="Upload Excel or CSV files containing waybill data"
+        icon="fas fa-cloud-upload-alt"
+    />
 
-    <div class="upload-container">
-        <div class="upload-form">
-            <div id="uploadResult" class="upload-result" role="alert" aria-live="polite"></div>
+    <div class="max-w-2xl mx-auto">
+        <x-card>
+            <div id="uploadResult" class="mb-4 hidden" role="alert" aria-live="polite"></div>
 
             <form id="uploadForm" enctype="multipart/form-data">
                 @csrf
                 <!-- Drop Zone -->
-                <div class="file-upload-area" id="dropZone" role="button" tabindex="0" aria-label="File upload area">
+                <div
+                    class="border-2 border-dashed border-dark-400 rounded-xl p-12 text-center transition-all duration-200 cursor-pointer hover:border-info-500 hover:bg-info-50 mb-6"
+                    id="dropZone"
+                    role="button"
+                    tabindex="0"
+                    aria-label="File upload area - drag and drop or click to select"
+                >
                     <input type="file" id="fileInput" name="waybill_file" accept=".xlsx,.xls,.csv" hidden>
-                    <div class="upload-icon">
+                    <div class="text-5xl text-info-500 mb-4">
                         <i class="fas fa-cloud-arrow-up"></i>
                     </div>
-                    <p class="upload-text">Drag & drop your file here</p>
-                    <p class="upload-subtext">or click to browse • .xlsx, .xls, .csv</p>
-                    <p class="file-name" id="fileName"></p>
+                    <p class="text-lg font-medium text-white mb-2">Drag & drop your file here</p>
+                    <p class="text-sm text-dark-100 mb-4">or click to browse</p>
+                    <p class="text-xs text-dark-100">.xlsx, .xls, .csv</p>
+                    <p class="text-sm font-semibold text-cyan-500 mt-4" id="fileName"></p>
                 </div>
 
                 <!-- File Format Info -->
-                <div class="info-box">
-                    <div class="info-box-header">
-                        <i class="fas fa-circle-info"></i>
-                        <h3>File Requirements</h3>
+                <div class="bg-info-50 border border-info-200 rounded-xl p-5 mb-6">
+                    <div class="flex items-center gap-2 mb-4 text-info-500">
+                        <i class="fas fa-circle-info text-lg"></i>
+                        <h3 class="text-sm font-semibold">File Requirements</h3>
                     </div>
-                    <div class="info-box-content">
-                        <div class="info-section">
-                            <h4>Required Columns</h4>
-                            <ul>
-                                <li>Waybill Number</li>
-                                <li>Sender Name</li>
-                                <li>Receiver Name</li>
-                                <li>Receiver Phone</li>
-                                <li>Destination</li>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div>
+                            <h4 class="text-xs font-semibold text-white uppercase tracking-wider mb-2">Required Columns</h4>
+                            <ul class="space-y-1">
+                                <li class="text-sm text-slate-300 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-info-500 before:rounded-full before:opacity-60">Waybill Number</li>
+                                <li class="text-sm text-slate-300 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-info-500 before:rounded-full before:opacity-60">Sender Name</li>
+                                <li class="text-sm text-slate-300 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-info-500 before:rounded-full before:opacity-60">Receiver Name</li>
+                                <li class="text-sm text-slate-300 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-info-500 before:rounded-full before:opacity-60">Receiver Phone</li>
+                                <li class="text-sm text-slate-300 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-info-500 before:rounded-full before:opacity-60">Destination</li>
                             </ul>
                         </div>
-                        <div class="info-section">
-                            <h4>Optional Columns</h4>
-                            <ul>
-                                <li>Receiver Address</li>
-                                <li>Weight (kg)</li>
-                                <li>COD Amount</li>
-                                <li>Remarks</li>
-                                <li>Service Type</li>
+                        <div>
+                            <h4 class="text-xs font-semibold text-white uppercase tracking-wider mb-2">Optional Columns</h4>
+                            <ul class="space-y-1">
+                                <li class="text-sm text-slate-300 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-info-500 before:rounded-full before:opacity-60">Receiver Address</li>
+                                <li class="text-sm text-slate-300 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-info-500 before:rounded-full before:opacity-60">Weight (kg)</li>
+                                <li class="text-sm text-slate-300 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-info-500 before:rounded-full before:opacity-60">COD Amount</li>
+                                <li class="text-sm text-slate-300 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-info-500 before:rounded-full before:opacity-60">Remarks</li>
+                                <li class="text-sm text-slate-300 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-info-500 before:rounded-full before:opacity-60">Service Type</li>
                             </ul>
                         </div>
-                        <div class="info-section">
-                            <h4>Constraints</h4>
-                            <ul>
-                                <li>Max file size: <strong>100 MB</strong></li>
-                                <li>First row = headers</li>
-                                <li>Large files processed async</li>
+                        <div>
+                            <h4 class="text-xs font-semibold text-white uppercase tracking-wider mb-2">Constraints</h4>
+                            <ul class="space-y-1">
+                                <li class="text-sm text-slate-300 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-info-500 before:rounded-full before:opacity-60">Max file size: <strong class="text-white">100 MB</strong></li>
+                                <li class="text-sm text-slate-300 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-info-500 before:rounded-full before:opacity-60">First row = headers</li>
+                                <li class="text-sm text-slate-300 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:bg-info-500 before:rounded-full before:opacity-60">Large files processed async</li>
                             </ul>
                         </div>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-lg w-100" id="uploadBtn" disabled>
-                    <i class="fas fa-upload"></i>
+                <x-button type="submit" variant="primary" size="lg" icon="fas fa-upload" id="uploadBtn" class="w-full" disabled>
                     Upload Waybills
-                </button>
+                </x-button>
 
-                <div class="progress-bar" id="progressBar" style="display:none;">
-                    <div class="progress-fill" id="progressFill"></div>
+                <div class="w-full h-1.5 bg-dark-950 rounded-full overflow-hidden mt-4 hidden" id="progressBar">
+                    <div class="h-full bg-gradient-to-r from-info-500 to-cyan-500 rounded-full transition-all duration-300" id="progressFill" style="width: 0%"></div>
                 </div>
-                
-                <div id="progressStatus" class="progress-status" style="display:none;"></div>
+
+                <div id="progressStatus" class="text-center mt-3 text-sm text-slate-400 hidden"></div>
             </form>
-        </div>
+        </x-card>
     </div>
 @endsection
-
-@push('styles')
-<style>
-    .info-box {
-        background: rgba(59, 130, 246, 0.06);
-        border: 1px solid rgba(59, 130, 246, 0.2);
-        border-radius: var(--radius-xl);
-        padding: var(--space-5);
-        margin-bottom: var(--space-5);
-    }
-
-    .info-box-header {
-        display: flex;
-        align-items: center;
-        gap: var(--space-2);
-        margin-bottom: var(--space-4);
-        color: var(--accent-blue);
-    }
-
-    .info-box-header i {
-        font-size: var(--text-lg);
-    }
-
-    .info-box-header h3 {
-        font-size: var(--text-sm);
-        font-weight: var(--font-semibold);
-        margin: 0;
-        color: var(--accent-blue);
-    }
-
-    .info-box-content {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: var(--space-5);
-    }
-
-    @media (max-width: 768px) {
-        .info-box-content {
-            grid-template-columns: 1fr;
-            gap: var(--space-4);
-        }
-    }
-
-    .info-section h4 {
-        font-size: var(--text-xs);
-        font-weight: var(--font-semibold);
-        color: var(--text-primary);
-        margin-bottom: var(--space-2);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .info-section ul {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-    }
-
-    .info-section li {
-        font-size: var(--text-sm);
-        color: var(--text-secondary);
-        padding: 4px 0;
-        padding-left: var(--space-3);
-        position: relative;
-    }
-
-    .info-section li::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 5px;
-        height: 5px;
-        background-color: var(--accent-blue);
-        border-radius: 50%;
-        opacity: 0.6;
-    }
-
-    .info-section li strong {
-        color: var(--text-primary);
-    }
-    
-    .progress-status {
-        text-align: center;
-        margin-top: var(--space-3);
-        font-size: var(--text-sm);
-        color: var(--text-secondary);
-    }
-</style>
-@endpush
 
 @push('scripts')
 <script>
@@ -199,16 +108,16 @@
         // Drag and drop handlers
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
-            dropZone.classList.add('drag-over');
+            dropZone.classList.add('border-info-500', 'bg-info-50');
         });
 
         dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('drag-over');
+            dropZone.classList.remove('border-info-500', 'bg-info-50');
         });
 
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
-            dropZone.classList.remove('drag-over');
+            dropZone.classList.remove('border-info-500', 'bg-info-50');
             if (e.dataTransfer.files.length) {
                 fileInput.files = e.dataTransfer.files;
                 updateFileName();
@@ -235,7 +144,6 @@
                 const file = fileInput.files[0];
                 const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
                 fileName.textContent = `${file.name} (${sizeMB} MB)`;
-                fileName.style.color = 'var(--accent-primary)';
                 uploadBtn.disabled = false;
 
                 if (file.size > 100 * 1024 * 1024) {
@@ -258,8 +166,8 @@
 
             const formData = new FormData(uploadForm);
             uploadBtn.disabled = true;
-            progressBar.style.display = 'block';
-            progressStatus.style.display = 'block';
+            progressBar.classList.remove('hidden');
+            progressStatus.classList.remove('hidden');
             progressFill.style.width = '5%';
             progressStatus.textContent = 'Uploading file...';
             showResult('info', 'Uploading file...');
@@ -285,19 +193,19 @@
                                 progressStatus.textContent = 'Processing...';
                                 pollUploadStatus(response.upload_id);
                             } else if (response.success) {
-                                progressBar.style.display = 'none';
-                                progressStatus.style.display = 'none';
+                                progressBar.classList.add('hidden');
+                                progressStatus.classList.add('hidden');
                                 showResult('success', response.message || 'Upload successful!');
                                 resetForm();
                             } else {
-                                progressBar.style.display = 'none';
-                                progressStatus.style.display = 'none';
+                                progressBar.classList.add('hidden');
+                                progressStatus.classList.add('hidden');
                                 uploadBtn.disabled = false;
                                 showResult('error', response.message || 'Upload failed');
                             }
                         } catch (e) {
-                            progressBar.style.display = 'none';
-                            progressStatus.style.display = 'none';
+                            progressBar.classList.add('hidden');
+                            progressStatus.classList.add('hidden');
                             uploadBtn.disabled = false;
                             showResult('error', 'Server returned an invalid response.');
                         }
@@ -313,15 +221,15 @@
                         } catch (e) {
                             showResult('error', `Upload failed: ${xhr.statusText}`);
                         }
-                        progressBar.style.display = 'none';
-                        progressStatus.style.display = 'none';
+                        progressBar.classList.add('hidden');
+                        progressStatus.classList.add('hidden');
                         uploadBtn.disabled = false;
                     }
                 });
 
                 xhr.addEventListener('error', () => {
-                    progressBar.style.display = 'none';
-                    progressStatus.style.display = 'none';
+                    progressBar.classList.add('hidden');
+                    progressStatus.classList.add('hidden');
                     uploadBtn.disabled = false;
                     showResult('error', 'Network error. Please try again.');
                 });
@@ -332,8 +240,8 @@
                 xhr.send(formData);
 
             } catch (error) {
-                progressBar.style.display = 'none';
-                progressStatus.style.display = 'none';
+                progressBar.classList.add('hidden');
+                progressStatus.classList.add('hidden');
                 uploadBtn.disabled = false;
                 showResult('error', 'An error occurred. Please try again.');
             }
@@ -364,8 +272,8 @@
                         } else if (data.status === 'failed') {
                             clearInterval(pollInterval);
                             pollInterval = null;
-                            progressBar.style.display = 'none';
-                            progressStatus.style.display = 'none';
+                            progressBar.classList.add('hidden');
+                            progressStatus.classList.add('hidden');
                             uploadBtn.disabled = false;
                             showResult('error', data.message);
                         }
@@ -383,13 +291,26 @@
         }
 
         function showResult(type, message) {
-            uploadResult.className = 'scan-result ' + type;
-            uploadResult.innerHTML = message;
-            uploadResult.style.display = 'block';
+            uploadResult.classList.remove('hidden');
+            const colors = {
+                success: 'bg-success-50 border-success-200 text-success-500',
+                error: 'bg-error-50 border-error-200 text-error-500',
+                info: 'bg-info-50 border-info-200 text-info-500',
+                warning: 'bg-warning-50 border-warning-200 text-warning-500'
+            };
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                info: 'fa-info-circle',
+                warning: 'fa-exclamation-triangle'
+            };
+
+            uploadResult.className = `px-4 py-3 rounded-lg flex items-center gap-3 text-sm font-medium border ${colors[type] || colors.info}`;
+            uploadResult.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i>${message}`;
 
             if (type === 'success') {
                 setTimeout(() => {
-                    uploadResult.style.display = 'none';
+                    uploadResult.classList.add('hidden');
                 }, 10000);
             }
         }

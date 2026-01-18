@@ -75,6 +75,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get tickets assigned to this user.
+     */
+    public function assignedTickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class, 'assigned_to');
+    }
+
+    /**
      * Get or create agent profile.
      */
     public function getOrCreateProfile(): AgentProfile
