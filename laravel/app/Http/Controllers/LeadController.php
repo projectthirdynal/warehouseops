@@ -80,6 +80,9 @@ class LeadController extends Controller
     /**
      * Export leads in J&T format (Excel)
      */
+    /**
+     * Export leads in J&T format using the provided template (exptemplete_en.xls)
+     */
     public function exportJNT(Request $request)
     {
         if (Auth::user()->role !== 'superadmin' && Auth::user()->role !== 'admin') {
@@ -88,11 +91,9 @@ class LeadController extends Controller
 
         $query = Lead::with('assignedAgent');
 
-        // Apply filters (matching index/monitoring)
         if ($request->has('status') && $request->status !== '') {
             $query->where('status', $request->status);
         } else {
-            // Default to SALE if no status specified, as J&T export is usually for sales
             $query->where('status', Lead::STATUS_SALE);
         }
 
@@ -109,9 +110,69 @@ class LeadController extends Controller
         }
 
         $leads = $query->latest('submitted_at')->get();
+        $templatePath = base_path('../exptemplete_en.xls');
+
+        if (!file_exists($templatePath)) {
+            return back()->with('error', 'Export template not found.');
+        }
+
+        // Load the template
+        $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($templatePath);
+        $spreadsheet = $reader->load($templatePath);
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Start writing at Row 9 (as per user instruction/template)
+        $row = 9;
+
+        foreach ($leads as $lead) {
+            // Address logic (same as original JNTExport)
+            $province = $lead->state ?? '';
+            $city = $lead->city ?? '';
+            $region = $lead->barangay ?? '';
+            $street = $lead->street ?? '';
+
+            if (!$province && !$city && $lead->address) {
+                $parts = explode(', ', $lead->address);
+                if (count($parts) >= 4) {
+                    $province = array_pop($parts);
+                    $city = array_pop($parts);
+                    $region = array_pop($parts);
+                    $street = implode(', ', $parts);
+                } elseif (count($parts) == 3) {
+                    $province = array_pop($parts);
+                    $city = array_pop($parts);
+                    $region = array_pop($parts);
+                }
+            }
+
+            $fullAddress = $street ?: $lead->address;
+            $parcelName = $lead->product_brand ?: ($lead->product_name ?: 'Products');
+
+            // Map data to columns A-M
+            $sheet->setCellValue('A' . $row, $lead->name); // Receiver
+            $sheet->setCellValueExplicit('B' . $row, $lead->phone, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING); // Telephone (Force String)
+            $sheet->setCellValue('C' . $row, $fullAddress); // Address
+            $sheet->setCellValue('D' . $row, strtoupper($province)); // Province
+            $sheet->setCellValue('E' . $row, strtoupper($city)); // City
+            $sheet->setCellValue('F' . $row, strtoupper($region)); // Region
+            $sheet->setCellValue('G' . $row, 'EZ'); // Express Type
+            $sheet->setCellValue('H' . $row, $parcelName); // Parcel Name
+            $sheet->setCellValue('I' . $row, '0.1'); // Weight
+            $sheet->setCellValue('J' . $row, '1'); // Total parcels
+            $sheet->setCellValue('K' . $row, $lead->amount ?: 0); // Parcel Value
+            $sheet->setCellValue('L' . $row, $lead->amount ?: 0); // COD
+            $sheet->setCellValue('M' . $row, $lead->notes ?: $lead->product_name); // Remarks
+
+            $row++;
+        }
 
         $filename = "JNT_Export_" . date('Y-m-d_H-i') . ".xls";
-        return Excel::download(new JNTExport($leads), $filename, \Maatwebsite\Excel\Excel::XLS);
+        
+        // Stream the download
+        return response()->streamDownload(function() use ($spreadsheet) {
+            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xls');
+            $writer->save('php://output');
+        }, $filename);
     }
 
     /**

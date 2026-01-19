@@ -256,8 +256,8 @@
                             'for return' => 4,
                             'returned' => 4
                         ];
-                        $currentStep = $statusMap[strtolower($waybill->status)] ?? 0;
-                        $isReturned = in_array(strtolower($waybill->status), ['returned', 'for return']);
+                        $currentStep = $statusMap[strtolower($waybill->status ?? '')] ?? 0;
+                        $isReturned = in_array(strtolower($waybill->status ?? ''), ['returned', 'for return']);
                         $steps = [
                             ['label' => 'Pending', 'icon' => 'fa-box'],
                             ['label' => 'HQ', 'icon' => 'fa-building'],
